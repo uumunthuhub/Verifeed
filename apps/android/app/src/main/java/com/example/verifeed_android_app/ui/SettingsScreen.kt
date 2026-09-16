@@ -2,8 +2,13 @@
 
 package com.example.verifeed_android_app.ui
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.NotificationManagerCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,6 +74,11 @@ fun SettingsScreen(
     remoteStage1Enabled: MutableState<Boolean>,
 ) {
     val historyCleared = remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val isNotificationListenerGranted = remember {
+        val enabledListeners = NotificationManagerCompat.getEnabledListenerPackages(context)
+        enabledListeners.contains(context.packageName)
+    }
 
     Column(
         Modifier
@@ -120,7 +130,16 @@ fun SettingsScreen(
                 PermissionRow("Internet Access", "Required for Stage 1 threat checks & AI analysis.", granted = true)
                 PermissionRow("Photo Picker", "Exercised only when tapping Choose Screenshot.", granted = photoPickerEnabled.value)
                 PermissionRow("Share Sheet", "Receives text shared into VeriFeed from other apps.", granted = true)
-                PermissionRow("Notification Listener", "Opt-in local screening for SMS/messaging apps.", granted = false)
+                PermissionRow(
+                    name = "Notification Screener",
+                    detail = "Opt-in local protection for SMS, Gmail, WhatsApp & Telegram.",
+                    granted = isNotificationListenerGranted,
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                        } catch (_: Exception) {}
+                    }
+                )
             }
         }
 
@@ -236,7 +255,12 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun PermissionRow(name: String, detail: String, granted: Boolean) {
+private fun PermissionRow(
+    name: String,
+    detail: String,
+    granted: Boolean,
+    onClick: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -252,15 +276,24 @@ private fun PermissionRow(name: String, detail: String, granted: Boolean) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(if (granted) PrimaryEmerald.copy(alpha = 0.2f) else SurfaceInnerDark)
-                .border(1.dp, if (granted) PrimaryEmerald else BorderDark, RoundedCornerShape(8.dp))
-                .padding(horizontal = 10.dp, vertical = 4.dp)
+                .background(
+                    if (granted) PrimaryEmerald.copy(alpha = 0.2f)
+                    else if (onClick != null) PrimaryEmerald.copy(alpha = 0.12f)
+                    else SurfaceInnerDark
+                )
+                .border(
+                    1.dp,
+                    if (granted || onClick != null) PrimaryEmerald else BorderDark,
+                    RoundedCornerShape(8.dp)
+                )
+                .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+                .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
             Text(
-                if (granted) "Active" else "Off",
+                text = if (granted) "Active" else if (onClick != null) "Enable Access" else "Off",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (granted) PrimaryEmerald else TextSecondary
+                color = if (granted || onClick != null) PrimaryEmerald else TextSecondary
             )
         }
     }

@@ -96,6 +96,27 @@ export async function submitScamReport(text: string, imageData?: string | null):
   }
 }
 
+export async function verifyEmail(payload: {
+  sender_address: string;
+  display_name?: string;
+  subject?: string;
+  body_text: string;
+  headers?: string;
+}) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/verify/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    console.error("Error verifying email:", err);
+    return null;
+  }
+}
+
 export async function fetchInstitutionalAlerts(): Promise<InstitutionalAlert[]> {
   try {
     const res = await fetch(`${API_BASE}/api/v1/verify/alerts`, {

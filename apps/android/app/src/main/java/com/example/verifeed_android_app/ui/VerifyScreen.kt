@@ -116,6 +116,7 @@ fun VerifyScreen(
     }
 
     val sampleClaims = listOf(
+        "From: PayPal <support@scam-mail.com> Urgent Account Suspended",
         "Standard Bank WhatsApp collateral free loans",
         "Airtel Money calling for secret PIN",
         "Free iPhone lottery gift card link",

@@ -11,6 +11,7 @@
 import { Navbar } from "@/components/Navbar";
 import { AskAgentWithContent } from "@/components/AskAgentWithContent";
 import { QuickScreenWidget } from "@/components/QuickScreenWidget";
+import { EmailScreenWidget } from "@/components/EmailScreenWidget";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { fetchRecentVerifications } from "@/lib/api";
 
@@ -99,6 +100,11 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
             <AskAgentWithContent initialContent={initialContent} />
           </div>
         </div>
+
+        {/* Phase H: Dedicated Email Phishing & Domain Spoofing Inspector */}
+        <section className="mb-10">
+          <EmailScreenWidget />
+        </section>
 
         {/* Recent Community Verifications Feed */}
         <section className="mt-10">

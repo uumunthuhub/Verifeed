@@ -7,11 +7,14 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.institution import Institution, InstitutionalAlert
 from app.models.verification_log import VerificationLog
+from app.schemas.email import EmailVerificationRequest, EmailVerificationResponse
+from app.services.email_screener import EmailScreener
 from app.services.fraud_detector import process_user_submission
 from app.services.ingestion import get_embedding
 from app.services.verification_agent import verify_claim
 
 router = APIRouter()
+email_screener_instance = EmailScreener()
 
 class VerifyRequest(BaseModel):
     query: str | None = ""
@@ -81,6 +84,18 @@ async def submit_scam_endpoint(req: ScamSubmissionRequest, db: Session = Depends
         "submission_id": submission.id,
         "cluster_id": submission.cluster_id
     }
+
+
+@router.post("/email", response_model=EmailVerificationResponse)
+def verify_email_endpoint(req: EmailVerificationRequest, db: Session = Depends(get_db)):
+    """
+    Phase H: Email Phishing & Domain Spoofing Verification Endpoint.
+    Analyzes sender domain mismatches, SPF/DKIM authentication, urgency lures, and links.
+    """
+    if not req.sender_address and not req.body_text:
+        raise HTTPException(status_code=400, detail="Must provide at least sender address or email body text")
+
+    return email_screener_instance.screen(req, db=db)
 
 @router.get("/alerts")
 def get_institutional_alerts(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
