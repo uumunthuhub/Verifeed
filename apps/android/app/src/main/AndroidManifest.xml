@@ -47,6 +47,17 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- Phase G: Opt-in Call Screening Service for incoming robocall & vishing defense -->
+        <service
+            android:name=".core.screening.VeriFeedCallScreeningService"
+            android:label="VeriFeed Robocall Defense"
+            android:permission="android.permission.BIND_SCREENING_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

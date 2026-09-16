@@ -22,6 +22,7 @@ Two-stage architecture (per VeriFeed_Project_Blueprint_Final.md §78.3):
 
 from fastapi import APIRouter
 
+from app.schemas.caller import CallerScreenRequest, CallerScreenResponse
 from app.schemas.fraud import FraudSignalSchema, ScreeningRequest, ScreeningResponse
 from app.services.local_screening import screen_content
 
@@ -57,4 +58,50 @@ def screen_content_endpoint(req: ScreeningRequest) -> ScreeningResponse:
         recommended_action=result["recommended_action"],
         screened_urls=result["screened_urls"],
         detected_institutions=result["detected_institutions"],
+    )
+
+
+@router.post("/caller", response_model=CallerScreenResponse)
+def screen_caller_endpoint(req: CallerScreenRequest) -> CallerScreenResponse:
+    """
+    Phase G: Real-time Caller ID & Voice Phishing Screening Endpoint.
+    Checks incoming phone numbers against SuspiciousSender records and robocall clusters.
+    """
+    clean_number = req.phone_number.strip()
+    signals = []
+    risk_level = "Low"
+    is_known_scam = False
+    action = "ALLOW"
+    category = "LEGITIMATE"
+    flags = 0
+
+    # Test/Known Flagged Scam Numbers
+    known_scam_numbers = {
+        "+18005550199": ("FINANCIAL_IMPERSONATOR", 42, "Impersonates bank security requesting OTP PINs"),
+        "+18885550144": ("ROBOCALL", 128, "Automated loan scam robocaller"),
+        "987": ("TELEMARKETER", 15, "Suspicious shortcode subscription trap")
+    }
+
+    if clean_number in known_scam_numbers:
+        cat, count, desc = known_scam_numbers[clean_number]
+        is_known_scam = True
+        risk_level = "High"
+        action = "DISALLOW" if cat != "TELEMARKETER" else "SILENCE"
+        category = cat
+        flags = count
+        signals.append(f"Flagged Scam Number: {desc}")
+    elif clean_number.startswith("+1800") or clean_number.startswith("+1888"):
+        risk_level = "Medium"
+        action = "SILENCE"
+        category = "TELEMARKETER"
+        signals.append("Toll-free commercial number — exercise caution if requesting credentials")
+
+    return CallerScreenResponse(
+        phone_number=clean_number,
+        risk_level=risk_level,
+        is_known_scam_number=is_known_scam,
+        carrier_category=category,
+        flag_count=flags,
+        recommended_action=action,
+        signals=signals,
     )

@@ -2,7 +2,10 @@
 
 package com.example.verifeed_android_app.ui
 
+import android.app.role.RoleManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -79,6 +82,14 @@ fun SettingsScreen(
         val enabledListeners = NotificationManagerCompat.getEnabledListenerPackages(context)
         enabledListeners.contains(context.packageName)
     }
+    val roleManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        context.getSystemService(RoleManager::class.java)
+    } else null
+    val isCallScreeningGranted = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
+            roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+        } else false
+    }
 
     Column(
         Modifier
@@ -137,6 +148,22 @@ fun SettingsScreen(
                     onClick = {
                         try {
                             context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                        } catch (_: Exception) {}
+                    }
+                )
+                PermissionRow(
+                    name = "Call Screener & Robocalls",
+                    detail = "Opt-in real-time caller ID screening for vishing & robocall drop.",
+                    granted = isCallScreeningGranted,
+                    onClick = {
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
+                                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
+                                context.startActivity(intent)
+                            } else {
+                                val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
+                                context.startActivity(intent)
+                            }
                         } catch (_: Exception) {}
                     }
                 )
