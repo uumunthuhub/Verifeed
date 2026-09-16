@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- VeriFeed Primary Green Palette -->
+    <color name="primary_900">#FF123B2A</color>
+    <color name="primary_800">#FF155D3A</color>
+    <color name="primary_700">#FF1F7A4D</color>
+    <color name="primary_600">#FF2F8F5B</color>
+    <color name="primary_500">#FF45A86B</color>
+    <color name="primary_100">#FFE8F5ED</color>
+    <color name="primary_50">#FFF3FAF5</color>
+
+    <!-- Neutral Palette -->
+    <color name="background_dark">#FF09120E</color>
+    <color name="ink_950">#FF10201A</color>
+    <color name="ink_900">#FF17251F</color>
+    <color name="ink_700">#FF425149</color>
+    <color name="ink_500">#FF6F7C75</color>
+    <color name="border">#FFDCE5DF</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="background">#FFF7F9F7</color>
+    <color name="soft">#FFEEF3EF</color>
+
+    <!-- Semantic Verdict Colors -->
+    <color name="success">#FF247A4D</color>
+    <color name="warning">#FFB7791F</color>
+    <color name="danger">#FFC53D3D</color>
+    <color name="info">#FF64748B</color>
+
+    <!-- Legacy colors for compatibility -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
