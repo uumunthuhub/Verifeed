@@ -20,3 +20,12 @@ class SourceResponse(BaseModel):
 def get_sources(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     sources = db.query(Source).offset(skip).limit(limit).all()
     return sources
+
+
+@router.post("/ingest")
+def trigger_ingestion(db: Session = Depends(get_db)):
+    """Trigger RSS ingestion across all sources."""
+    from database.seeds.seed_stories import seed_news_data
+    seed_news_data()
+    return {"message": "Ingestion and seeding completed successfully."}
+

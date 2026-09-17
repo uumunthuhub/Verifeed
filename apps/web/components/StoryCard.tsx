@@ -36,7 +36,14 @@ export function StoryCard({ story }: { story: Story }) {
   return (
     <Link href={`/story/${story.id}`} className="vf-card vf-animate-in" aria-label={`Read story: ${story.title}`}>
       <div className="vf-card-header">
-        <h2 className="vf-card-headline">{story.title}</h2>
+        <div>
+          {story.primary_source && (
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-extrabold uppercase tracking-wider bg-primary-100 text-primary-800 dark:bg-primary-950/80 dark:text-primary-300 dark:border dark:border-primary-800/60 mb-1.5">
+              <span>{story.primary_source}</span>
+            </div>
+          )}
+          <h2 className="vf-card-headline">{story.title}</h2>
+        </div>
         <svg className="vf-arrow" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"
           viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 17L17 7M17 7H7M17 7v10" strokeLinecap="round" strokeLinejoin="round"/>

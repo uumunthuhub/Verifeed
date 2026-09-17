@@ -22,6 +22,8 @@ export interface Story {
   summary: string | null;
   created_at: string;
   article_count: number;
+  sources?: string[];
+  primary_source?: string | null;
 }
 
 export interface StoryDetail extends Story {

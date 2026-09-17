@@ -18,6 +18,8 @@ import {
   Lock,
   ChevronRight,
   Info,
+  PhoneCall,
+  Mail,
 } from "lucide-react";
 
 export const metadata = {
@@ -158,33 +160,49 @@ export default function SettingsPage() {
           {/* Android protection */}
           <section id="settings-android">
             <SectionHeading
-              title="Android App"
-              subtitle="Mobile protection features — coming in Phase E"
+              title="Android Mobile Companion"
+              subtitle="Native mobile protection features implemented in the VeriFeed Android app"
             />
             <div className="space-y-3">
               <SettingRow
                 id="setting-android-manual"
-                icon={<Smartphone className="h-5 w-5 text-ink-500" />}
+                icon={<Smartphone className="h-5 w-5 text-primary-600" />}
                 title="Manual Verification"
                 description="Paste text, upload a screenshot, or share content from any Android app directly into VeriFeed for Stage 1 + Stage 2 verification."
-                status="coming-soon"
-                badge="Android"
+                status="active"
+                badge="Available on Android"
               />
               <SettingRow
                 id="setting-android-notification"
-                icon={<Bell className="h-5 w-5 text-ink-500" />}
+                icon={<Bell className="h-5 w-5 text-primary-600" />}
                 title="Notification Screening"
-                description="VeriFeed can screen incoming notifications from messaging apps for suspicious content. Requires explicit Notification Access permission in Android Settings — off by default."
-                status="coming-soon"
+                description="VeriFeed screens incoming notifications from messaging apps for suspicious content. Requires explicit Notification Access permission in Android Settings — off by default."
+                status="active"
                 badge="Android · Policy gated"
               />
               <SettingRow
                 id="setting-android-share"
-                icon={<ChevronRight className="h-5 w-5 text-ink-500" />}
-                title="Share Intent"
-                description="Share any message, URL, or screenshot to VeriFeed from any Android app using the system share sheet."
-                status="coming-soon"
-                badge="Android"
+                icon={<ChevronRight className="h-5 w-5 text-primary-600" />}
+                title="Share Intent Receiver"
+                description="Share any message, URL, or screenshot to VeriFeed from any Android app using the native system share sheet."
+                status="active"
+                badge="Available on Android"
+              />
+              <SettingRow
+                id="setting-android-call"
+                icon={<PhoneCall className="h-5 w-5 text-primary-600" />}
+                title="Voice Call & Phishing Screening"
+                description="Evaluates incoming call numbers and voice phishing indicators using the Android CallScreeningService."
+                status="active"
+                badge="Android · Call Screening"
+              />
+              <SettingRow
+                id="setting-android-email"
+                icon={<Mail className="h-5 w-5 text-primary-600" />}
+                title="Email Header & Domain Screener"
+                description="Analyzes raw email content and headers for SPF/DKIM/DMARC status, domain spoofing, and phishing lures."
+                status="active"
+                badge="Android · Email Screener"
               />
             </div>
           </section>

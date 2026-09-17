@@ -36,6 +36,8 @@ class StoryResponse(BaseModel):
     summary: str | None
     created_at: datetime
     article_count: int
+    sources: list[str] = []
+    primary_source: str | None = None
 
 class StoryDetailResponse(StoryResponse):
     articles: list[ArticleResponse]
@@ -61,6 +63,9 @@ def get_stories(
     for story, article_count in stories:
         story_dict = {c.name: getattr(story, c.name) for c in story.__table__.columns}
         story_dict['article_count'] = article_count
+        source_names = [a.source.name for a in story.articles if a.source]
+        story_dict['sources'] = source_names
+        story_dict['primary_source'] = source_names[0] if source_names else None
         result.append(story_dict)
 
     return result
@@ -106,6 +111,9 @@ def search_stories(
     for story, article_count in stories_with_counts:
         story_dict = {c.name: getattr(story, c.name) for c in story.__table__.columns}
         story_dict["article_count"] = article_count
+        source_names = [a.source.name for a in story.articles if a.source]
+        story_dict["sources"] = source_names
+        story_dict["primary_source"] = source_names[0] if source_names else None
         result.append(story_dict)
 
     return result
@@ -121,5 +129,8 @@ def get_story(story_id: int, db: Session = Depends(get_db)):
     story_dict = {c.name: getattr(story, c.name) for c in story.__table__.columns}
     story_dict['article_count'] = len(articles)
     story_dict['articles'] = articles
+    source_names = [a.source.name for a in articles if a.source]
+    story_dict['sources'] = source_names
+    story_dict['primary_source'] = source_names[0] if source_names else None
 
     return story_dict

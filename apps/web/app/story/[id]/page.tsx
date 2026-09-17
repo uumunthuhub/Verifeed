@@ -52,9 +52,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 function SourceArticleCard({ article }: { article: Article }) {
-  const domain = (() => {
+  const sourceName = article.source?.name ?? (() => {
     try { return new URL(article.url).hostname.replace("www.", ""); }
-    catch { return article.source?.name ?? "Unknown"; }
+    catch { return "Unknown Source"; }
   })();
 
   return (
@@ -63,10 +63,14 @@ function SourceArticleCard({ article }: { article: Article }) {
       target="_blank"
       rel="noopener noreferrer"
       className="vf-source-card"
-      aria-label={`Read "${article.headline}" on ${domain}`}
+      aria-label={`Read "${article.headline}" on ${sourceName}`}
     >
-      <div className="vf-source-name">{domain}</div>
-      <div className="vf-source-headline">{article.headline}</div>
+      <div className="vf-source-name font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-1">
+        {sourceName}
+      </div>
+      <div className="vf-source-headline text-base font-semibold text-foreground">
+        {article.headline}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
         <div className="vf-source-time">{timeAgo(article.published_at)}</div>
         {article.published_at && (
