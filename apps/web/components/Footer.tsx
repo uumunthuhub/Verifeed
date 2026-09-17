@@ -9,10 +9,10 @@ export function Footer({ maxWidth = "max-w-6xl" }: { maxWidth?: string }) {
           <div className="md:col-span-1 flex flex-col gap-4">
             <Link href="/" className="vf-logo" aria-label="VeriFeed home">
               <div
-                className="vf-logo-mark bg-primary-500 text-white font-black shadow-[0_0_12px_rgba(69,168,107,0.3)]"
+                className="w-9 h-9 rounded-xl bg-white border border-primary-200 shadow-md shadow-primary-500/10 flex items-center justify-center p-0.5 overflow-hidden shrink-0"
                 aria-hidden="true"
               >
-                VF
+                <img src="/verifeed-bot.png" alt="VeriFeed Logo" className="h-full w-full object-contain" />
               </div>
               <span className="vf-logo-text font-black text-xl text-primary-600">
                 VeriFeed

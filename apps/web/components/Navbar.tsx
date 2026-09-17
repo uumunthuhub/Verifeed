@@ -40,8 +40,8 @@ export function Navbar({
             className="flex items-center gap-2"
             aria-label="VeriFeed home"
           >
-            <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-primary-500 to-primary-600 text-white font-black shadow-lg shadow-primary-500/30 flex items-center justify-center text-sm">
-              VF
+            <div className="w-9 h-9 rounded-xl bg-white border border-primary-200 shadow-md shadow-primary-500/10 flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+              <img src="/verifeed-bot.png" alt="VeriFeed Logo" className="h-full w-full object-contain" />
             </div>
             <span className="font-black text-lg text-primary-600">
               VeriFeed
