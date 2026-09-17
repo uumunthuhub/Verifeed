@@ -47,7 +47,7 @@ MONETARY_REQUEST_PHRASES: list[str] = [
 IMPERSONATION_KEYWORDS: list[str] = [
     "standard bank", "airtel money", "tnm mpamba", "national bank",
     "fdh bank", "rbm", "reserve bank", "macra", "malawi government",
-    "malawi police", "escom", "water board", "mra",
+    "malawi police", "escom", "water board", "mra", "pusepa", "pension",
 ]
 
 UNSOLICITED_PRIZE_PHRASES: list[str] = [
