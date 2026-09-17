@@ -31,6 +31,27 @@ Every deep investigation result provides two clear, distinct verdicts:
 
 ---
 
+## 📄 Real-World Scenario: Forwarded Memos & Public Notices
+
+A primary core use-case addressed by VeriFeed is verifying **unverified public notices, civil servant memos, or government announcements circulating on WhatsApp and social media**.
+
+### The Scenario
+A citizen or pensioner receives a forwarded text or screenshot claiming:
+> *"NOTICE TO ALL PENSIONERS IN MALAWI: Due to technical challenges affecting the pension disbursement system, pension payments will not be accessed today... Signed: PUSEPA PRESIDENT"*
+
+### How VeriFeed Resolves It
+```
+[ RECEIVE ] ──► User pastes text or shares screenshot into VeriFeed (via Android Share Sheet or Web UI)
+[ STAGE 1 ] ──► Instant screening (<100ms) flags high-impact keywords (PUSEPA, Pension Disbursement, System Downtime)
+[ STAGE 2 ] ──► Entity Extraction isolates entities: PUSEPA, Government of Malawi, Genesis Malijana, Sep 14-16 dates
+[ EVIDENCE ] ──► Queries official Ministry registries & verified news outlets (e.g., Zodiak TV, Times 360, BBC)
+[ DUAL     ] ──► Factual Claim Verdict: UNVERIFIED / PENDING OFFICIAL STATEMENT
+  VERDICT   ──► Message Authenticity Verdict: UNVERIFIED FORWARDED MEMO (Not sent from official gov domain/channel)
+[ ACTION   ] ──► Clear User Guidance: "Cross-reference with Ministry of Finance official channels. Do not forward unverified WhatsApp messages."
+```
+
+---
+
 ## 📁 Repository Structure
 
 ```
