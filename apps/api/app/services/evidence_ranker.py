@@ -238,7 +238,7 @@ class EvidenceRanker:
 
         if not ranked:
             parts.append(
-                "No official press releases, government disclaimers, or verified news articles were found matching this circulating claim."
+                "No supporting evidence was found in indexed sources matching this circulating claim."
             )
 
         if prior_screening_risk and prior_screening_risk != "Low":
@@ -252,7 +252,7 @@ class EvidenceRanker:
             parts.append(f"Primary sources: {top_notes}.")
 
         parts.append(
-            "Final verdict was synthesized using grounded evidence analysis."
+            "Final verdict was synthesized using Gemini AI grounded evidence analysis."
         )
 
         return " ".join(parts)
