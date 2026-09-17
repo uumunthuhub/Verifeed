@@ -41,7 +41,8 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
         {/* Page Header */}
         <div className="mb-6 text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-600 border border-primary-200 mb-3">
-            <span>🤖 AI Grounded RAG Verification</span>
+            <img src="/verifeed-bot.png" alt="" className="h-4 w-4 object-contain inline-block" />
+            <span>AI Grounded RAG Verification</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight mb-3">
             VeriFeed{" "}

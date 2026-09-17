@@ -105,8 +105,8 @@ export function AskAgentWithContent({ initialContent }: AskAgentWithContentProps
       <div className="relative flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-tr from-primary-500 to-primary-600 text-xl font-bold text-white shadow-lg shadow-primary-500/30">
-            🤖
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white border border-primary-200 p-0.5 shadow-md shadow-primary-500/10 overflow-hidden shrink-0">
+            <img src="/verifeed-bot.png" alt="VeriFeed AI Bot" className="h-full w-full object-contain" />
           </span>
           <div>
             <h2 className="text-lg md:text-xl font-bold text-foreground tracking-tight">
