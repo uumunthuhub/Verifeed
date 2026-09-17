@@ -217,45 +217,42 @@ class EvidenceRanker:
         article_count: int,
         prior_screening_risk: str | None,
     ) -> str:
-        """Build a human-readable methodology explanation."""
+        """Build a user-friendly plain-language methodology explanation."""
         parts: list[str] = []
-
-        if prior_screening_risk:
-            parts.append(
-                f"Stage 1 local screening detected risk level: {prior_screening_risk}."
-            )
-
-        tier_counts: dict[str, int] = {}
-        for src in ranked:
-            key = src.source_type
-            tier_counts[key] = tier_counts.get(key, 0) + 1
 
         if institutional_count:
             parts.append(
-                f"Found {institutional_count} official institutional alert"
+                f"Cross-referenced with {institutional_count} official institutional alert"
                 f"{'s' if institutional_count > 1 else ''} in the VeriFeed registry."
             )
         if fact_check_count:
             parts.append(
-                f"Retrieved {fact_check_count} fact-checker rating"
-                f"{'s' if fact_check_count > 1 else ''} from Google Fact Check."
+                f"Evaluated {fact_check_count} independent fact-checker rating"
+                f"{'s' if fact_check_count > 1 else ''}."
             )
         if article_count:
             parts.append(
-                f"Matched {article_count} indexed news article"
-                f"{'s' if article_count > 1 else ''}."
+                f"Matched against {article_count} verified news report"
+                f"{'s' if article_count > 1 else ''} from trusted media outlets."
             )
-        if not ranked:
-            parts.append("No supporting evidence was found in indexed sources.")
 
-        # Top sources
+        if not ranked:
+            parts.append(
+                "No official press releases, government disclaimers, or verified news articles were found matching this circulating claim."
+            )
+
+        if prior_screening_risk and prior_screening_risk != "Low":
+            parts.append(
+                f"Stage 1 threat screening flagged risk indicators ({prior_screening_risk} Risk)."
+            )
+
         top = ranked[:2]
         if top:
             top_notes = "; ".join(s.methodology_note for s in top)
-            parts.append(f"Top evidence: {top_notes}.")
+            parts.append(f"Primary sources: {top_notes}.")
 
         parts.append(
-            "Verdict was produced by Gemini AI synthesis grounded on the above evidence."
+            "Final verdict was synthesized using grounded evidence analysis."
         )
 
         return " ".join(parts)

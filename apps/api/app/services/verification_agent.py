@@ -273,27 +273,32 @@ async def verify_claim(
     elif claim_verdict == "Misleading":
         verdict = "Unconfirmed"
     
-    # Add default recommended actions if none set
+    # Add default user-friendly recommended actions if none set
     if not recommended_actions:
         if risk_level == "High":
             recommended_actions = [
                 {
-                    "action": "Do not send money or share personal information",
+                    "action": "Do not send money, share credentials, or visit offices based on this message",
                     "priority": "critical",
-                    "reason": "High-risk message detected"
+                    "reason": "Official government and banking authorities do not make critical policy or financial announcements solely via unverified social media forwards."
                 },
                 {
-                    "action": "Contact the institution using official channels",
+                    "action": "Verify directly with official government or institutional portals",
                     "priority": "high",
-                    "reason": "Always verify through official communication channels"
+                    "reason": "Check official Ministry or bank public channels (or verified news broadcasts) before taking action."
                 }
             ]
         else:
             recommended_actions = [
                 {
-                    "action": "Verify the information independently",
+                    "action": "Treat this circulating message as unverified and refrain from forwarding it",
                     "priority": "medium",
-                    "reason": "Standard verification precaution"
+                    "reason": "Forwarding unverified public notices causes unnecessary panic and financial anxiety among citizens."
+                },
+                {
+                    "action": "Confirm details via official announcements or verified news broadcasts",
+                    "priority": "medium",
+                    "reason": "Official public notices are published through official government press releases or verified news outlets like Zodiak TV."
                 }
             ]
 
@@ -320,14 +325,18 @@ async def verify_claim(
     # 4. AI Synthesis — via the provider boundary (not direct SDK calls)
     # Use ranker confidence as starting point; Gemini may refine it
     confidence = ranking.confidence_score
-    summary = "No matching news articles, institutional alerts, or fact-check records were found for this claim."
+    summary = (
+        "VeriFeed found no official confirmation or public statement for this circulating message. "
+        "Neither official government registries nor verified news outlets (such as Zodiak TV) have published a notice corroborating this claim. "
+        "Forwarded plain-text notices on social media that lack official reference numbers or press releases should be treated with caution."
+    )
 
     if institutional_matches:
         confidence = 0.95
         inst_names = ", ".join(sorted({m["institution"] for m in institutional_matches}))
         alert_details = [f"{m['institution']} ('{m['title']}'): {m['alert_text']}" for m in institutional_matches]
         summary = (
-            f"Official scam alerts have been issued by {inst_names}. "
+            f"Official scam disclaimers have been issued by {inst_names}. "
             + " ".join(alert_details)
         )
 

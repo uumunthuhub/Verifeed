@@ -5,6 +5,7 @@ import { GuidanceCard } from "./GuidanceCard";
 import { EvidenceCard, EvidenceSource } from "./EvidenceCard";
 
 interface VerdictFirstResultProps {
+  query?: string;
   claimVerdict?: string;
   messageAuthenticityVerdict?: string;
   riskLevel: "High" | "Medium" | "Low";
@@ -29,6 +30,7 @@ interface VerdictFirstResultProps {
 }
 
 export function VerdictFirstResult({
+  query,
   claimVerdict,
   messageAuthenticityVerdict,
   riskLevel,
@@ -43,6 +45,18 @@ export function VerdictFirstResult({
 }: VerdictFirstResultProps) {
   return (
     <div className="space-y-6">
+      {/* Submitted Claim Box */}
+      {query && query !== "Unspecified claim" && (
+        <div className="rounded-2xl border border-border bg-soft p-5">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-ink-500 block mb-2">
+            Message / Claim Analyzed
+          </span>
+          <p className="text-sm font-medium text-foreground italic leading-relaxed">
+            &ldquo;{query.length > 300 ? `${query.slice(0, 300)}…` : query}&rdquo;
+          </p>
+        </div>
+      )}
+
       {/* VERDICT SECTION - Prominent at top */}
       <div className="rounded-2xl border-2 border-border bg-surface p-6 shadow-xl">
         <div className="flex items-center gap-2 mb-4">

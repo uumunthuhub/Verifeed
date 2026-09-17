@@ -96,7 +96,6 @@ class DetectedSignal:
     matched_text: str | None = None
     severity: str = "medium"  # low | medium | high
 
-
 @dataclass
 class ScreeningResult:
     risk_level: str = "Low"           # Low | Medium | High
@@ -300,7 +299,6 @@ class LocalScreeningEngine:
             screened_urls=found_urls,
             detected_institutions=[i.title() for i in institutions],
         )
-
 
 # ---------------------------------------------------------------------------
 # Module-level entry point
