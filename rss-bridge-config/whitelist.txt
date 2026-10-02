@@ -1,0 +1,7 @@
+; RSS Bridge whitelist — restricts which bridges are enabled.
+; Only FacebookBridge is needed for VeriFeed Phase 1 live ingestion.
+; All other bridges are disabled for security.
+;
+; Reference: https://github.com/RSS-Bridge/rss-bridge/wiki/Whitelisting
+
+FacebookBridge

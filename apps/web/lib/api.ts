@@ -62,6 +62,8 @@ export async function verifyClaim(
   imageData?: string | null,
   fileName?: string | null,
   priorScreening?: ScreeningResult | null,
+  audioData?: string | null,
+  audioName?: string | null,
 ): Promise<VerificationResult | null> {
   try {
     const res = await fetch(`${API_BASE}/api/v1/verify/`, {
@@ -71,6 +73,8 @@ export async function verifyClaim(
         query,
         image_data: imageData,
         file_name: fileName,
+        audio_data: audioData,
+        audio_name: audioName,
         prior_screening: priorScreening ?? null,
       }),
     });
@@ -81,6 +85,7 @@ export async function verifyClaim(
     return null;
   }
 }
+
 
 export async function submitScamReport(text: string, imageData?: string | null): Promise<boolean> {
   try {
@@ -205,3 +210,33 @@ export async function screenContent(
     return null;
   }
 }
+
+export interface ReportAskMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ReportAskResponse {
+  answer: string;
+  suggested_followups: string[];
+}
+
+export async function askVerificationFollowup(
+  logId: string | number,
+  question: string,
+  history: ReportAskMessage[] = []
+): Promise<ReportAskResponse | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/verify/${logId}/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, history }),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch (err) {
+    console.error("Error asking follow-up question:", err);
+    return null;
+  }
+}
+

@@ -91,7 +91,7 @@ export function ProtectionAlert({
 
   const handleVerify = () => {
     const encoded = encodeURIComponent(content);
-    window.open(`/verify?content=${encoded}`, "_self");
+    window.open(`/#ask-agent-widget`, "_self");
   };
 
   return (

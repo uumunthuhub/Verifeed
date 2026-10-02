@@ -8,7 +8,11 @@ celery_app = Celery(
     "worker",
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=["app.services.ingestion", "app.services.fraud_ingestion"]
+    include=[
+        "app.services.ingestion",
+        "app.services.fraud_ingestion",
+        "app.services.facebook_ingestor",  # Phase 1: Facebook RSS Bridge
+    ]
 )
 
 celery_app.conf.update(
@@ -20,12 +24,18 @@ celery_app.conf.update(
 )
 
 celery_app.conf.beat_schedule = {
-    "poll-institutions-daily": {
+    # Existing schedules
+    "poll-institutions": {
         "task": "poll_all_institutions",
-        "schedule": 86400.0, # Run daily
+        "schedule": 900.0,  # Every 15 minutes
     },
-    "ingest-news-hourly": {
+    "ingest-news": {
         "task": "ingest_all_sources",
-        "schedule": 3600.0, # Run hourly
-    }
+        "schedule": 900.0,  # Every 15 minutes
+    },
+    # Phase 1: Facebook RSS Bridge — every 5 minutes
+    "poll-facebook-rss-feeds": {
+        "task": "poll_facebook_rss_feeds",
+        "schedule": 300.0,  # Every 5 minutes
+    },
 }

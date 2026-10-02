@@ -63,12 +63,12 @@ export function GuidanceCard({
       case "low":
         return "text-success border-success/30 bg-success/5";
       default:
-        return "text-ink-700 border-border bg-soft";
+        return "text-ink-700 border-border bg-white";
     }
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-lg">
+    <div className="rounded-2xl border border-border bg-white p-6 shadow-lg shadow-primary-500/5">
       {/* Risk Level Header */}
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
         <div className="flex items-center gap-3">
@@ -84,7 +84,7 @@ export function GuidanceCard({
 
       {/* Verdict Summary */}
       {(messageAuthenticityVerdict || claimVerdict) && (
-        <div className="mb-6 bg-soft rounded-xl p-4 border border-border">
+        <div className="mb-6 bg-white rounded-xl p-4 border border-border">
           {messageAuthenticityVerdict && (
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-semibold text-ink-500">Message Authenticity:</span>

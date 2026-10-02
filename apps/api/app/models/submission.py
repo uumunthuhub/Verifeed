@@ -14,8 +14,12 @@ class SubmissionCluster(Base):
     representative_text: Mapped[str] = mapped_column(Text, nullable=False)
     submission_count: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(50), default="unconfirmed")
-    first_seen: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
-    last_seen: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    first_seen: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.UTC)
+    )
+    last_seen: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.UTC)
+    )
     embedding: Mapped[Vector | None] = mapped_column(Vector(768), nullable=True)
 
     submissions = relationship("UserSubmission", back_populates="cluster")
@@ -27,7 +31,9 @@ class UserSubmission(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     submitted_text: Mapped[str] = mapped_column(Text, nullable=False)
     extracted_entities: Mapped[str | None] = mapped_column(Text, nullable=True)
-    submitted_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    submitted_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.UTC)
+    )
     cluster_id: Mapped[int | None] = mapped_column(ForeignKey("submission_clusters.id"), nullable=True)
 
     cluster = relationship("SubmissionCluster", back_populates="submissions")

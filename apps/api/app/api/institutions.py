@@ -188,7 +188,7 @@ SEED_INSTITUTIONS: list[dict[str, Any]] = [
     {
         "name": "Airtel Money Malawi",
         "sector": "Telecom & Mobile Money",
-        "website_url": "https://www.airtel.mw",
+        "website_url": "https://www.tnm.co.mw/",
         "alerts": [
             {
                 "title": "BEWARE: Fake Airtel Money Promotion SMS & PIN Harvesters",
@@ -205,7 +205,7 @@ SEED_INSTITUTIONS: list[dict[str, Any]] = [
     {
         "name": "TNM Mpamba Mobile Money",
         "sector": "Telecom & Mobile Money",
-        "website_url": "https://www.tnm.co.mw",
+        "website_url": "https://www.airtel.mw/",
         "alerts": [
             {
                 "title": "WARNING: Accidental Reversal SMS Scams",
@@ -478,3 +478,78 @@ def seed_institutions(db: Session = Depends(get_db)):
         "alerts_created": created_alerts,
         "total_institutions": len(SEED_INSTITUTIONS),
     }
+
+
+class SampleIngestItem(BaseModel):
+    text: str
+    category: str = "scam_sms"  # "scam_sms", "fake_promo", "phishing_email", "official_promo", "wildlife_rumor"
+    source_outlet: str | None = "User Submission"
+    is_legitimate: bool = False
+
+
+class SampleIngestRequest(BaseModel):
+    samples: list[SampleIngestItem]
+
+
+@router.post("/ingest-samples")
+def ingest_sample_dataset(payload: SampleIngestRequest, db: Session = Depends(get_db)):
+    """
+    Bulk ingest sample SMS messages, fake promos, phishing emails, and official communications.
+    Computes dense vector embeddings and clusters/indexes them for real-time verification retrieval.
+    """
+    from app.models.article import Article
+    from app.models.source import Source
+    from app.services.fraud_detector import process_user_submission
+
+    ai_service = get_ai_service()
+    ingested_count = 0
+    clusters_updated: set[int] = set()
+
+    # Get or create Default Admin Source
+    default_source = db.query(Source).filter(Source.name == "VeriFeed Dataset Registry").first()
+    if not default_source:
+        default_source = Source(name="VeriFeed Dataset Registry", website_url="https://verifeed.mw", trust_tier=1)
+        db.add(default_source)
+        db.flush()
+
+
+    for item in payload.samples:
+        raw_text = item.text
+        if isinstance(raw_text, str):
+            text = raw_text.strip()
+        elif isinstance(raw_text, (int, float)):
+            text = str(raw_text).strip()
+        else:
+            text = ""
+
+        if not text or len(text) < 5:
+            continue
+
+        if not item.is_legitimate:
+            # Fraudulent / Scam sample -> Process into Submission & Cluster
+            sub = process_user_submission(db, text)
+            c_id = getattr(sub, "cluster_id", None)
+            if isinstance(c_id, int):
+                clusters_updated.add(c_id)
+            ingested_count += 1
+        else:
+            # Legitimate official communication sample -> Index as verified article/notice
+            emb = ai_service.embed(text)
+            art = Article(
+                source_id=default_source.id,
+                headline=text[:150],
+                content=text,
+                url=f"https://verifeed.mw/verified-channel/{ingested_count}",
+                embedding=emb,
+            )
+
+            db.add(art)
+            ingested_count += 1
+
+    db.commit()
+    return {
+        "status": "success",
+        "samples_ingested": ingested_count,
+        "clusters_updated": len(clusters_updated),
+    }
+

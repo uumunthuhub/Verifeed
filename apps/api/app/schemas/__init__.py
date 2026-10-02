@@ -9,24 +9,26 @@ from .fraud import (
     SubmissionResponse,
 )
 from .verification import (
-    EvidenceSourceSchema,
+    OfficialSource,
     RecommendedAction,
     ScamSubmissionRequest,
     ScamSubmissionResponse,
+    SubScores,
     VerifyRequest,
     VerifyResponse,
 )
 
 __all__ = [
     "EmergingPatternResponse",
-    "EvidenceSourceSchema",
     "FraudSignalSchema",
+    "OfficialSource",
     "RecommendedAction",
     "ScamSubmissionRequest",
     "ScamSubmissionResponse",
     # Fraud / Screening
     "ScreeningRequest",
     "ScreeningResponse",
+    "SubScores",
     "SubmissionRequest",
     "SubmissionResponse",
     # Verification

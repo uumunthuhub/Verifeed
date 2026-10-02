@@ -47,6 +47,27 @@ SCAM_PHRASE_PATTERNS: list[dict] = [
         "description": "Fake account suspension claim to trick users into clicking phishing links",
         "severity": "high",
     },
+      {
+        "name": "SOCIAL_DEVELOPMENT_FUND",
+        "pattern_type": "keyword_phrase",
+        "pattern_value": "SOCIAL DEVELOPENT FUND",
+        "description": "Fake account claim to trick users that they have been selected by the government to receive social development fund of up to mk150,000 for three months",
+        "severity": "high",
+    },
+      {
+        "name": "ndalama_ija_mutumize_pa",
+        "pattern_type": "keyword_phrase",
+        "pattern_value": "ndalama ija mutumize pa",
+        "description": "Fake account claim to trick users to send money to a fake number with a name",
+        "severity": "high",
+    },
+      {
+        "name": "MTUKULA_PAKHOMO_PROJECT",
+        "pattern_type": "keyword_phrase",
+        "pattern_value": "MTUKULA PAKHOMO PROJECT",
+        "description": "Fake promotion claim to trick users into calling a fake number to claim there mtukula pakhomo promotion money",
+        "severity": "high",
+    },
     {
         "name": "monetary_send_money",
         "pattern_type": "keyword_phrase",
@@ -153,16 +174,46 @@ SUSPICIOUS_URL_PATTERNS: list[dict] = [
 
 SUSPICIOUS_SENDERS: list[dict] = [
     {
-        "sender_value": "+12025551234",
+        "sender_value": "+26509975912",
         "sender_type": "phone_number",
         "status": "reported",
-        "notes": "US number reported in SMS prize phishing to Malawian numbers",
+        "notes": "MW number reported in SMS prize phishing to Malawian numbers",
+    },
+    {
+        "sender_value": "+2650987698553",
+        "sender_type": "phone_number",
+        "status": "reported",
+        "notes": "MW number used in loan offer SMS phishing",
+    },
+    {
+        "sender_value": "+2650992260119",
+        "sender_type": "phone_number",
+        "status": "reported",
+        "notes": "MW number used in loan offer SMS phishing",
     },
     {
         "sender_value": "+447700900001",
         "sender_type": "phone_number",
         "status": "reported",
-        "notes": "UK number used in loan offer SMS phishing",
+        "notes": "MW number used in loan offer SMS phishing",
+    },
+    {
+        "sender_value": "+2650993501863",
+        "sender_type": "phone_number",
+        "status": "reported",
+        "notes": "MW number used in loan offer SMS phishing",
+    },
+    {
+        "sender_value": "+2650980200870",
+        "sender_type": "phone_number",
+        "status": "reported",
+        "notes": "MW number used in loan offer SMS phishing",
+    },
+    {
+        "sender_value": "+2650997998430",
+        "sender_type": "phone_number",
+        "status": "reported",
+        "notes": "MW number used in loan offer SMS phishing",
     },
 ]
 
@@ -230,7 +281,6 @@ def seed_scam_patterns(db) -> None:
         f"{seeded['senders']} suspicious senders, "
         f"{seeded['domains']} suspicious domains"
     )
-
 
 if __name__ == "__main__":
     db = SessionLocal()

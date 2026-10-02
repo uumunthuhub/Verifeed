@@ -5,8 +5,15 @@ package com.example.verifeed_android_app.ui
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.telecom.TelecomManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,9 +48,12 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,17 +88,48 @@ fun SettingsScreen(
 ) {
     val historyCleared = remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val isNotificationListenerGranted = remember {
-        val enabledListeners = NotificationManagerCompat.getEnabledListenerPackages(context)
-        enabledListeners.contains(context.packageName)
-    }
+    val permissionRefreshTrigger = remember { mutableStateOf(0) }
+    val isNotificationListenerGranted = remember { mutableStateOf(
+        NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+    ) }
     val roleManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         context.getSystemService(RoleManager::class.java)
     } else null
-    val isCallScreeningGranted = remember {
+    val isCallScreeningGranted = remember { mutableStateOf(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
             roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
         } else false
+    ) }
+
+    val callScreeningRoleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        permissionRefreshTrigger.value++
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isNotificationListenerGranted.value =
+                    NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
+                    isCallScreeningGranted.value = roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Refresh permission states when screen appears or when trigger changes
+    LaunchedEffect(permissionRefreshTrigger.value) {
+        isNotificationListenerGranted.value = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
+            isCallScreeningGranted.value = roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+        }
     }
 
     Column(
@@ -144,27 +185,19 @@ fun SettingsScreen(
                 PermissionRow(
                     name = "Notification Screener",
                     detail = "Opt-in local protection for SMS, Gmail, WhatsApp & Telegram.",
-                    granted = isNotificationListenerGranted,
+                    granted = isNotificationListenerGranted.value,
                     onClick = {
-                        try {
-                            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                        } catch (_: Exception) {}
+                        openNotificationListenerSettings(context)
+                        permissionRefreshTrigger.value++
                     }
                 )
                 PermissionRow(
                     name = "Call Screener & Robocalls",
                     detail = "Opt-in real-time caller ID screening for vishing & robocall drop.",
-                    granted = isCallScreeningGranted,
+                    granted = isCallScreeningGranted.value,
                     onClick = {
-                        try {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
-                                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-                                context.startActivity(intent)
-                            } else {
-                                val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER)
-                                context.startActivity(intent)
-                            }
-                        } catch (_: Exception) {}
+                        openCallScreeningSettings(context, roleManager, callScreeningRoleLauncher)
+                        permissionRefreshTrigger.value++
                     }
                 )
             }
@@ -374,4 +407,105 @@ private fun persist(
             remoteStage1Enabled = remoteStage1Enabled.value,
         ),
     )
+}
+
+private fun openCallScreeningSettings(
+    context: Context,
+    roleManager: RoleManager?,
+    launcher: androidx.activity.result.ActivityResultLauncher<Intent>
+) {
+    var launched = false
+
+    // Attempt 1: RoleManager request on Android Q+ (API 29+)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
+        try {
+            if (roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
+                val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
+                launcher.launch(intent)
+                launched = true
+            }
+        } catch (_: Exception) {}
+    }
+
+    if (launched) return
+
+    // Attempt 2: Manage Default Apps Settings (Android N+)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+            val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            launched = true
+        } catch (_: Exception) {}
+    }
+
+    if (launched) return
+
+    // Attempt 3: Telecom Change Default Dialer Intent (Pre-Q fallback)
+    try {
+        val intent = Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+            putExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+        launched = true
+    } catch (_: Exception) {}
+
+    if (launched) return
+
+    // Attempt 4: App Details / Permissions Settings for VeriFeed
+    try {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+        launched = true
+    } catch (_: Exception) {}
+
+    if (launched) return
+
+    // Attempt 5: General System Settings Root
+    try {
+        val intent = Intent(Settings.ACTION_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (_: Exception) {}
+}
+
+private fun openNotificationListenerSettings(context: Context) {
+    var launched = false
+
+    // Attempt 1: Notification Listener Settings
+    try {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+        launched = true
+    } catch (_: Exception) {}
+
+    if (launched) return
+
+    // Attempt 2: App Details Settings
+    try {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+        launched = true
+    } catch (_: Exception) {}
+
+    if (launched) return
+
+    // Attempt 3: General System Settings
+    try {
+        val intent = Intent(Settings.ACTION_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (_: Exception) {}
 }

@@ -238,7 +238,7 @@ export function QuickScreenWidget() {
               {result.needs_deep_verify && (
                 <a
                   id="quick-screen-verify-cta"
-                  href={`/verify?content=${encodeURIComponent(content)}`}
+                  href="/#ask-agent-widget"
                   className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-900 shadow hover:brightness-105 transition-all"
                 >
                   Verify
@@ -287,7 +287,7 @@ export function QuickScreenWidget() {
               <p className="text-[11px] text-primary-600 font-medium">
                 ✓ No obvious scam signals. You can still{" "}
                 <a
-                  href={`/verify?content=${encodeURIComponent(content)}`}
+                  href="/#ask-agent-widget"
                   className="underline hover:text-primary-700"
                 >
                   verify with VeriFeed

@@ -4,7 +4,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import institutions, screening, sources, stories, verification
+from app.api import facebook_webhook, institutions, screening, sources, stories, verification, whatsapp_webhook
 
 app = FastAPI(
     title="VeriFeed API",
@@ -13,15 +13,25 @@ app = FastAPI(
 )
 
 # Configure CORS
-origins_str = os.getenv("BACKEND_CORS_ORIGINS", '["http://localhost:3000"]')
-try:
-    origins_list = json.loads(origins_str)
-except json.JSONDecodeError:
-    origins_list = ["http://localhost:3000"]
+DEFAULT_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+origins_str = os.getenv("BACKEND_CORS_ORIGINS", "")
+if origins_str:
+    try:
+        origins_list = json.loads(origins_str)
+    except json.JSONDecodeError:
+        origins_list = DEFAULT_ORIGINS
+else:
+    origins_list = DEFAULT_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins_list,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,6 +43,8 @@ app.include_router(sources.router, prefix="/api/v1/sources", tags=["sources"])
 app.include_router(verification.router, prefix="/api/v1/verify", tags=["verification"])
 app.include_router(screening.router, prefix="/api/v1/screen", tags=["screening"])
 app.include_router(institutions.router, prefix="/api/v1/institutions", tags=["institutions"])
+app.include_router(facebook_webhook.router, prefix="/api/v1/facebook", tags=["facebook"])
+app.include_router(whatsapp_webhook.router, prefix="/api/v1/whatsapp", tags=["whatsapp"])
 
 @app.get("/")
 def root():

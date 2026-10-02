@@ -33,8 +33,23 @@ class AIProvider(ABC):
         ...
 
     @abstractmethod
-    def extract_from_image(self, image_data: str, prompt: str) -> str:
+    def extract_from_image(self, image_data: str, prompt: str = "Extract text and claims from this image") -> str:
         """Extract text/claims from a base64-encoded image using multimodal AI.
         Returns empty string on error.
         """
         ...
+
+    @abstractmethod
+    def extract_from_audio(self, audio_data: str, prompt: str = "Transcribe and extract claims from this audio") -> str:
+        """Extract transcription, claims, tone, and language from a base64-encoded audio file/voice note.
+        Returns empty string on error.
+        """
+        ...
+
+    @abstractmethod
+    def analyze_image_authenticity(self, image_data: str) -> dict:
+        """Analyze image for synthetic AI generation, digital manipulation, or stock photo recycling.
+        Returns dictionary with analysis results.
+        """
+        ...
+

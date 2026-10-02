@@ -7,6 +7,22 @@ import httpx
 logger = logging.getLogger(__name__)
 
 GOOGLE_FACT_CHECK_API_URL = "https://factchecktools.googleapis.com/v1alpha1/claims:search"
+APPROVED_FACT_CHECK_PUBLISHERS = frozenset({
+    "africa check",
+    "firstcheck africa",
+    "pesacheck",
+    "dubawa",
+    "full fact",
+    "factcheck.org",
+    "reuters fact check",
+    "associated press",
+    "ap fact check",
+    "snopes",
+})
+
+
+def _is_approved_review(publisher: str, url: str) -> bool:
+    return url.startswith("https://") and publisher.strip().lower() in APPROVED_FACT_CHECK_PUBLISHERS
 
 async def search_google_fact_check(query: str) -> list[dict[str, Any]]:
     """
@@ -47,6 +63,9 @@ async def search_google_fact_check(query: str) -> list[dict[str, Any]]:
                     url = review.get("url", "")
                     title = review.get("title", "")
                     rating = review.get("textualRating", "Unspecified")
+
+                    if not _is_approved_review(publisher, url):
+                        continue
 
                     results.append({
                         "claim_text": text,

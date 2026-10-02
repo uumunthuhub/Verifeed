@@ -42,6 +42,7 @@ MONETARY_REQUEST_PHRASES: list[str] = [
     "registration fee", "activation fee", "release fee", "small fee",
     "wire transfer", "western union", "send airtime", "buy voucher",
     "buy recharge card", "momo transfer", "airtel money transfer",
+    "instant loan", "whatsapp loan", "collateral free", "collateral-free",
 ]
 
 IMPERSONATION_KEYWORDS: list[str] = [
@@ -55,6 +56,18 @@ UNSOLICITED_PRIZE_PHRASES: list[str] = [
     "lucky winner", "free iphone", "free laptop", "cash prize",
     "claim your reward", "claim your prize",
 ]
+
+WILDLIFE_PANIC_KEYWORDS: list[str] = [
+    "lion escaped", "wild animal on the loose", "leopard escaped", "game reserve escape",
+    "kasungu reserve", "majete reserve", "liwonde national park", "lengwe national park",
+    "stay indoors lion", "attacking people lion", "eating livestock",
+]
+
+PROPAGANDA_RUMOR_PHRASES: list[str] = [
+    "share before deleted", "forward to all groups", "government hiding this",
+    "police coverup", "secret warning", "dont tell anyone but", "leaked voice note",
+]
+
 
 # Known suspicious URL shorteners and scam-hosting patterns
 SUSPICIOUS_URL_PATTERNS: list[str] = [
@@ -82,6 +95,49 @@ SUSPICIOUS_SENDER_PATTERNS: list[str] = [
     r"^\+1\d{10}$",         # US numbers used in SMS phishing
     r"^\+44\d{10}$",        # UK numbers used in SMS phishing
     r"^\d{5,6}$",           # Generic short codes not in registry
+]
+
+# ---------------------------------------------------------------------------
+# Chichewa / Nyanja scam keyword list (Phase 4 — G10 fix)
+# Common fraud vocabulary used in Malawi WhatsApp/SMS scams.
+# A single match is flagged as HIGH severity — equivalent to urgency+monetary.
+# ---------------------------------------------------------------------------
+
+CHICHEWA_SCAM_PHRASES: list[str] = [
+    # Prize / winner claims
+    "mwapambana",           # "you have won"
+    "mwapambana mtengo",    # "you have won a prize"
+    "mwasankhidwa",         # "you have been selected"
+    "mphotho yanu",         # "your reward/prize"
+    "mupeze mphatso",       # "receive a gift"
+    "kuwina",               # "to win"
+    "mwakuwina",            # "you have won (past)"
+    # Urgency / time pressure
+    "mwachangu",            # "quickly / hurry"
+    "lowani mwachangu",     # "enter quickly"
+    "nthawi yathera",       # "time has run out"
+    "lipsani",              # "hurry / be quick" (Yao/Nyanja slang)
+    "musachedwe",           # "don't be late"
+    # Money transfer requests
+    "tumizani ndalama",     # "send money"
+    "tamva ndalama",        # "receive money" (informal)
+    "gawidwani ndalama",    # "share/distribute money"
+    "ndalama zachuma",      # "prize money"
+    "lipirani chindapusa",  # "pay a registration/processing fee"
+    "lipirani kafukufuku",  # "pay a verification fee"
+    # Registration / activation scams
+    "jipondolereni",        # "register yourself"
+    "lembelani",            # "write/register"
+    "mtukula pakhomo",      # "door-to-door distribution" (fake government program)
+    "gawo lanu",            # "your share / your portion"
+    # Fake government / program scams
+    "pulogalamu ya boma",   # "government program"
+    "thandizo la boma",     # "government assistance"
+    "boma likupereka",      # "the government is giving"
+    "kapito ka boma",       # "government share"
+    # Threats / coercion
+    "akutsekeredwa",        # "will be blocked/closed"
+    "nambala yanu idzatsekeredwa",  # "your number will be blocked"
 ]
 
 
@@ -139,7 +195,39 @@ class LocalScreeningEngine:
         found_urls = list(set(url_pattern.findall(text)))
         signals: list[DetectedSignal] = []
 
+        trusted_domains = [
+            "times.mw", "mbc.mw", "malawi24.com", "zodiakmalawi.com", "zodiak.mw",
+            "gov.mw", "malawi.gov.mw", "macra.mw", "tnm.co.mw", "airtel.mw", "lunthatv.com"
+        ]
+
+        def _levenshtein(s1: str, s2: str) -> int:
+            if len(s1) < len(s2):
+                return _levenshtein(s2, s1)
+            if len(s2) == 0:
+                return len(s1)
+            prev = list(range(len(s2) + 1))
+            for i, c1 in enumerate(s1):
+                curr = [i + 1]
+                for j, c2 in enumerate(s2):
+                    curr.append(min(prev[j + 1] + 1, curr[j] + 1, prev[j] + (c1 != c2)))
+                prev = curr
+            return prev[-1]
+
         for url in found_urls:
+            domain = url.split("/")[2] if "://" in url else url.split("/")[0]
+            domain_lower = domain.lower()
+            if domain_lower not in trusted_domains:
+                for official in trusted_domains:
+                    dist = _levenshtein(domain_lower, official)
+                    if 0 < dist <= 3 or "promo" in domain_lower or "win" in domain_lower:
+                        signals.append(DetectedSignal(
+                            signal_type="domain_spoofing",
+                            description=f"Lookalike domain spoofing detected for link '{url}' (Levenshtein dist={dist})",
+                            matched_text=url,
+                            severity="high",
+                        ))
+                        break
+
             for pattern in SUSPICIOUS_URL_PATTERNS:
                 if re.search(pattern, url, re.IGNORECASE):
                     signals.append(DetectedSignal(
@@ -190,7 +278,44 @@ class LocalScreeningEngine:
                 ))
                 break
 
+        # Phase 4 (G10): Chichewa / Nyanja scam phrase detection
+        # A single Chichewa scam phrase is flagged high — these phrases
+        # do not appear in legitimate communications from official institutions.
+        for phrase in CHICHEWA_SCAM_PHRASES:
+            if phrase in tl:
+                signals.append(DetectedSignal(
+                    signal_type="chichewa_scam_phrase",
+                    description=(
+                        f"Chichewa/Nyanja scam vocabulary detected ('{phrase}'). "
+                        "This phrase is commonly used in WhatsApp and SMS fraud campaigns in Malawi."
+                    ),
+                    matched_text=phrase,
+                    severity="high",
+                ))
+                break  # one Chichewa signal is enough to elevate risk
+
+        for phrase in WILDLIFE_PANIC_KEYWORDS:
+            if phrase in tl:
+                signals.append(DetectedSignal(
+                    signal_type="wildlife_panic_rumor",
+                    description="Unverified wild animal escape or park panic claim — requires official wildlife authority verification",
+                    matched_text=phrase,
+                    severity="medium",
+                ))
+                break
+
+        for phrase in PROPAGANDA_RUMOR_PHRASES:
+            if phrase in tl:
+                signals.append(DetectedSignal(
+                    signal_type="propaganda_lure",
+                    description="Viral propaganda or forced sharing lure ('share before deleted') — characteristic of unverified rumors",
+                    matched_text=phrase,
+                    severity="medium",
+                ))
+                break
+
         return signals
+
 
     # --- Institution detection ----------------------------------------
 
@@ -225,6 +350,17 @@ class LocalScreeningEngine:
     def _compute_risk_level(cls, signals: list[DetectedSignal]) -> str:
         high_count = sum(1 for s in signals if s.severity == "high")
         total = len(signals)
+
+        # Phase 4 (G10): A single Chichewa scam phrase is unambiguous fraud vocabulary.
+        # It does not require corroboration — escalate to High immediately.
+        has_chichewa = any(s.signal_type == "chichewa_scam_phrase" for s in signals)
+        if has_chichewa:
+            return "High"
+
+        has_impersonation = any(s.signal_type == "impersonation" for s in signals)
+        if high_count >= 1 and has_impersonation:
+            return "High"
+
         if high_count >= 2 or total >= cls.HIGH_THRESHOLD:
             return "High"
         if total >= cls.MEDIUM_THRESHOLD or high_count == 1:
@@ -278,13 +414,12 @@ class LocalScreeningEngine:
 
         # Institution detection
         institutions = cls.detect_institutions(content)
-        if institutions and not url_signals and not phrase_signals:
-            # Institution mentioned but no other signals — low concern
+        if institutions:
             all_signals.append(DetectedSignal(
-                signal_type="institution_mention",
+                signal_type="impersonation",
                 description=f"Known institution name detected: {', '.join(i.title() for i in institutions)}",
                 matched_text=", ".join(institutions),
-                severity="low",
+                severity="medium",
             ))
 
         risk_level = cls._compute_risk_level(all_signals)

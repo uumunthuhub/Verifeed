@@ -11,6 +11,16 @@ VeriFeed transforms claim verification from a **reactive** fact-checking website
 
 ---
 
+## 📖 Architecture & System Specifications
+
+- 📘 [docs/algorithm.md](file:///home/graysoncomrademsiska/Documents/Development/WebDev/Python/Verifeed/docs/algorithm.md) — Dynamic Algorithm Specification (Multi-Modal Ingestion, Dual Live Retrieval, Scoring Formula $S = 0.35 S_{domain} + 0.35 S_{vector} + 0.20 S_{forensic} + 0.10 S_{telecom}$, Levenshtein Spoofing)
+- 📐 [docs/blueprint.md](file:///home/graysoncomrademsiska/Documents/Development/WebDev/Python/Verifeed/docs/blueprint.md) — System Blueprint & Relational/Pgvector Database Schema
+- 🔄 [docs/system_flow.md](file:///home/graysoncomrademsiska/Documents/Development/WebDev/Python/Verifeed/docs/system_flow.md) — System Flowcharts, Sequence Diagrams & Hard Rule Decision Trees
+- 🎨 [docs/design.md](file:///home/graysoncomrademsiska/Documents/Development/WebDev/Python/Verifeed/docs/design.md) — User Interface & Agent Interaction Design (Persona & Verdict Enums)
+- 💻 [docs/implementation.md](file:///home/graysoncomrademsiska/Documents/Development/WebDev/Python/Verifeed/docs/implementation.md) — Complete FastAPI Backend Reference Implementation
+
+---
+
 ## 🌟 Key Architecture & Capabilities
 
 ### 1. Two-Stage Verification Pipeline

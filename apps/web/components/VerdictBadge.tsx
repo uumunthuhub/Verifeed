@@ -1,100 +1,138 @@
 "use client";
 
-interface VerdictBadgeProps {
-  verdict: string;
-  verdictType?: "claim" | "authenticity" | "legacy";
-  size?: "sm" | "md" | "lg";
+// ---------------------------------------------------------------------------
+// Canonical 5-label verdict constants (G1 fix — Phase 1)
+// All new code must use these. Legacy labels remain as fallback only.
+// ---------------------------------------------------------------------------
+
+export type CanonicalVerdict =
+  | "VERIFIED_TRUE"
+  | "VERIFIED_FALSE"
+  | "HIGH_RISK_SCAM"
+  | "PENDING_VERIFICATION"
+  | "UNVERIFIED";
+
+// Legacy verdict types kept for backward compat reads from old API responses
+type LegacyClaimVerdict = "True" | "False" | "Partly True" | "Misleading" | "Insufficient Evidence";
+type LegacyAuthenticityVerdict =
+  | "Verified Official"
+  | "Likely Legitimate"
+  | "Unverified"
+  | "Suspicious"
+  | "Likely Fraudulent"
+  | "Confirmed Fraudulent";
+type LegacySingleVerdict =
+  | "Confirmed Scam"
+  | "Confirmed"
+  | "Unconfirmed"
+  | "Disputed / False"
+  | "No Coverage Found";
+
+type AnyVerdict = CanonicalVerdict | LegacyClaimVerdict | LegacyAuthenticityVerdict | LegacySingleVerdict | string;
+
+// ---------------------------------------------------------------------------
+// Legacy → Canonical mapping
+// ---------------------------------------------------------------------------
+
+function toCanonical(verdict: AnyVerdict): CanonicalVerdict {
+  const map: Record<string, CanonicalVerdict> = {
+    // New canonical (pass-through)
+    VERIFIED_TRUE: "VERIFIED_TRUE",
+    VERIFIED_FALSE: "VERIFIED_FALSE",
+    HIGH_RISK_SCAM: "HIGH_RISK_SCAM",
+    PENDING_VERIFICATION: "PENDING_VERIFICATION",
+    UNVERIFIED: "UNVERIFIED",
+    // Legacy single verdicts
+    "Confirmed Scam": "HIGH_RISK_SCAM",
+    "Confirmed": "VERIFIED_TRUE",
+    "Unconfirmed": "PENDING_VERIFICATION",
+    "Disputed / False": "VERIFIED_FALSE",
+    "No Coverage Found": "UNVERIFIED",
+    // Legacy claim verdicts
+    "True": "VERIFIED_TRUE",
+    "False": "VERIFIED_FALSE",
+    "Partly True": "PENDING_VERIFICATION",
+    "Misleading": "PENDING_VERIFICATION",
+    "Insufficient Evidence": "UNVERIFIED",
+    // Legacy authenticity verdicts
+    "Verified Official": "VERIFIED_TRUE",
+    "Likely Legitimate": "VERIFIED_TRUE",
+    "Suspicious": "HIGH_RISK_SCAM",
+    "Likely Fraudulent": "HIGH_RISK_SCAM",
+    "Confirmed Fraudulent": "HIGH_RISK_SCAM",
+  };
+  return map[verdict] ?? "UNVERIFIED";
 }
 
-export function VerdictBadge({ verdict, verdictType = "legacy", size = "md" }: VerdictBadgeProps) {
-  let badgeStyle = "bg-ink-900 text-ink-100 border-ink-700";
-  let icon = "❓";
+// ---------------------------------------------------------------------------
+// Verdict badge config
+// ---------------------------------------------------------------------------
 
-  // Claim verdicts: True, False, Partly True, Misleading, Insufficient Evidence
-  if (verdictType === "claim") {
-    switch (verdict) {
-      case "True":
-        badgeStyle = "bg-success/20 text-success border-success/50 shadow-[0_0_15px_rgba(36,122,77,0.25)]";
-        icon = "✅";
-        break;
-      case "False":
-        badgeStyle = "bg-danger/20 text-danger border-danger/50 shadow-[0_0_15px_rgba(197,61,61,0.3)]";
-        icon = "🚫";
-        break;
-      case "Partly True":
-        badgeStyle = "bg-warning/20 text-warning border-warning/50";
-        icon = "⚠️";
-        break;
-      case "Misleading":
-        badgeStyle = "bg-warning/20 text-warning border-warning/50";
-        icon = "⚠️";
-        break;
-      case "Insufficient Evidence":
-      default:
-        badgeStyle = "bg-info/20 text-info border-info/50";
-        icon = "❓";
-        break;
-    }
-  }
-  // Message authenticity verdicts: Verified Official, Likely Legitimate, Unverified, Suspicious, Likely Fraudulent, Confirmed Fraudulent
-  else if (verdictType === "authenticity") {
-    switch (verdict) {
-      case "Verified Official":
-        badgeStyle = "bg-success/20 text-success border-success/50 shadow-[0_0_15px_rgba(36,122,77,0.25)]";
-        icon = "✅";
-        break;
-      case "Likely Legitimate":
-        badgeStyle = "bg-success/20 text-success border-success/50";
-        icon = "✓";
-        break;
-      case "Unverified":
-        badgeStyle = "bg-info/20 text-info border-info/50";
-        icon = "❓";
-        break;
-      case "Suspicious":
-        badgeStyle = "bg-warning/20 text-warning border-warning/50";
-        icon = "⚠️";
-        break;
-      case "Likely Fraudulent":
-        badgeStyle = "bg-danger/20 text-danger border-danger/50";
-        icon = "⚠️";
-        break;
-      case "Confirmed Fraudulent":
-        badgeStyle = "bg-danger/20 text-danger border-danger/50 shadow-[0_0_15px_rgba(197,61,61,0.3)] animate-pulse";
-        icon = "🛑";
-        break;
-      default:
-        badgeStyle = "bg-info/20 text-info border-info/50";
-        icon = "❓";
-        break;
-    }
-  }
-  // Legacy single verdict system (backward compatibility)
-  else {
-    switch (verdict) {
-      case "Confirmed Scam":
-        badgeStyle = "bg-danger/20 text-danger border-danger/50 shadow-[0_0_15px_rgba(197,61,61,0.3)] animate-pulse";
-        icon = "🛑";
-        break;
-      case "Confirmed":
-        badgeStyle = "bg-success/20 text-success border-success/50 shadow-[0_0_15px_rgba(36,122,77,0.25)]";
-        icon = "✅";
-        break;
-      case "Unconfirmed":
-        badgeStyle = "bg-warning/20 text-warning border-warning/50";
-        icon = "⚠️";
-        break;
-      case "Disputed / False":
-        badgeStyle = "bg-danger/20 text-danger border-danger/50";
-        icon = "🚫";
-        break;
-      case "No Coverage Found":
-      default:
-        badgeStyle = "bg-info/20 text-info border-info/50";
-        icon = "❓";
-        break;
-    }
-  }
+interface BadgeConfig {
+  label: string;
+  labelCy: string;        // Chichewa display label
+  icon: string;
+  badgeClass: string;
+}
+
+const CANONICAL_CONFIG: Record<CanonicalVerdict, BadgeConfig> = {
+  VERIFIED_TRUE: {
+    label: "Verified Authentic",
+    labelCy: "Nkhani Yotsimikizika",
+    icon: "✅",
+    badgeClass:
+      "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-[0_0_16px_rgba(16,185,129,0.20)]",
+  },
+  VERIFIED_FALSE: {
+    label: "Verified False",
+    labelCy: "Uthenga Wawonzedwa",
+    icon: "🚫",
+    badgeClass:
+      "bg-red-500/15 text-red-400 border-red-500/40 shadow-[0_0_16px_rgba(239,68,68,0.25)]",
+  },
+  HIGH_RISK_SCAM: {
+    label: "High Risk Scam",
+    labelCy: "Muchenjere: Chinyengo",
+    icon: "🚨",
+    badgeClass:
+      "bg-purple-500/15 text-purple-300 border-purple-500/50 shadow-[0_0_18px_rgba(168,85,247,0.30)] animate-pulse",
+  },
+  PENDING_VERIFICATION: {
+    label: "Pending Verification",
+    labelCy: "Ikufufuzidwa",
+    icon: "🕐",
+    badgeClass:
+      "bg-amber-500/15 text-amber-400 border-amber-500/40",
+  },
+  UNVERIFIED: {
+    label: "Unverified",
+    labelCy: "Sichinatsimikizidwe",
+    icon: "❓",
+    badgeClass:
+      "bg-slate-500/10 text-slate-400 border-slate-500/30",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+interface VerdictBadgeProps {
+  verdict: AnyVerdict;
+  /** @deprecated use `verdict` with a canonical label; verdictType is ignored for canonical labels */
+  verdictType?: "claim" | "authenticity" | "legacy" | "canonical";
+  size?: "sm" | "md" | "lg";
+  /** Show Chichewa label instead of English */
+  locale?: "en" | "ny";
+}
+
+export function VerdictBadge({
+  verdict,
+  size = "md",
+  locale = "en",
+}: VerdictBadgeProps) {
+  const canonical = toCanonical(verdict);
+  const config = CANONICAL_CONFIG[canonical];
 
   const sizeClasses = {
     sm: "px-2.5 py-0.5 text-xs gap-1.5 font-semibold",
@@ -102,12 +140,17 @@ export function VerdictBadge({ verdict, verdictType = "legacy", size = "md" }: V
     lg: "px-5 py-2 text-base gap-2.5 font-extrabold tracking-wide",
   }[size];
 
+  const label = locale === "ny" ? config.labelCy : config.label;
+
   return (
     <span
-      className={`inline-flex items-center rounded-full border backdrop-blur-md transition-all duration-300 ${badgeStyle} ${sizeClasses}`}
+      className={`inline-flex items-center rounded-full border backdrop-blur-md transition-all duration-300 ${config.badgeClass} ${sizeClasses}`}
+      data-verdict={canonical}
+      role="status"
+      aria-label={`Verdict: ${label}`}
     >
-      <span className="text-base">{icon}</span>
-      <span>{verdict}</span>
+      <span className="text-base" aria-hidden="true">{config.icon}</span>
+      <span>{label}</span>
     </span>
   );
 }

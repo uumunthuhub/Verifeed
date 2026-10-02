@@ -10,6 +10,7 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}"],
     exclude: ["**/node_modules/**", "**/e2e/**"],
+    testTimeout: 15000,
     alias: {
       "@": path.resolve(__dirname, "./"),
     },

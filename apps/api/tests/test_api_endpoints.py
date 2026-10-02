@@ -80,3 +80,17 @@ def test_get_story_not_found():
     response = client.get("/api/v1/stories/999999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Story not found"
+
+
+def test_ask_report_question_endpoint():
+    """Verify /api/v1/verify/{id}/ask answers follow-up questions."""
+    payload = {
+        "question": "What should I do if I received this message?",
+        "history": []
+    }
+    response = client.post("/api/v1/verify/1/ask", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "answer" in data
+    assert "suggested_followups" in data
+

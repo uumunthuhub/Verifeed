@@ -62,6 +62,8 @@ def run_migrations_online() -> None:
     """
     from app.db.session import DATABASE_URL
     configuration = config.get_section(config.config_ini_section)
+    if configuration is None:
+        configuration = {}
     configuration["sqlalchemy.url"] = DATABASE_URL
     connectable = engine_from_config(
         configuration,
@@ -76,7 +78,6 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
-
 
 if context.is_offline_mode():
     run_migrations_offline()

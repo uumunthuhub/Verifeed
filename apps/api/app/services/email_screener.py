@@ -1,7 +1,8 @@
 import re
-from typing import List, Tuple, Dict, Any, Optional
+from typing import ClassVar
+
 from sqlalchemy.orm import Session
-from app.models.institution import Institution
+
 from app.schemas.email import EmailVerificationRequest, EmailVerificationResponse
 
 
@@ -16,7 +17,7 @@ class EmailScreener:
     4. Optional Raw Header (SPF/DKIM) Inspection
     """
 
-    KNOWN_INSTITUTION_DOMAINS: Dict[str, str] = {
+    KNOWN_INSTITUTION_DOMAINS: ClassVar[dict[str, str]] = {
         "paypal": "paypal.com",
         "standard bank": "standardbank.co.za",
         "airtel": "airtel.in",
@@ -29,18 +30,18 @@ class EmailScreener:
         "meta": "facebook.com",
     }
 
-    SUSPICIOUS_KEYWORDS = [
+    SUSPICIOUS_KEYWORDS: ClassVar[list[str]] = [
         "account suspended", "urgent action required", "verify your password",
         "unauthorized login attempt", "security alert", "click here to unlock",
         "wire transfer", "gift card", "immediate verification needed",
         "invoice attached", "unpaid bill alert"
     ]
 
-    def screen(self, payload: EmailVerificationRequest, db: Optional[Session] = None) -> EmailVerificationResponse:
-        signals: List[str] = []
-        suspicious_links: List[str] = []
+    def screen(self, payload: EmailVerificationRequest, db: Session | None = None) -> EmailVerificationResponse:
+        signals: list[str] = []
+        suspicious_links: list[str] = []
         domain_spoof_detected = False
-        official_domain_match: Optional[str] = None
+        official_domain_match: str | None = None
         risk_score = 0
 
         sender_email = payload.sender_address.lower().strip()

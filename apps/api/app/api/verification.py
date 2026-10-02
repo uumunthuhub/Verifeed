@@ -4,10 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.api.admin import require_ingestion_admin
 from app.db.session import get_db
 from app.models.institution import Institution, InstitutionalAlert
-from app.models.verification_log import VerificationLog
+from app.models.verification_log import CanonicalVerdict, VerificationLog
 from app.schemas.email import EmailVerificationRequest, EmailVerificationResponse
+from app.services.ai import get_ai_service
 from app.services.email_screener import EmailScreener
 from app.services.fraud_detector import process_user_submission
 from app.services.ingestion import get_embedding
@@ -20,6 +22,8 @@ class VerifyRequest(BaseModel):
     query: str | None = ""
     image_data: str | None = None
     file_name: str | None = None
+    audio_data: str | None = None
+    audio_name: str | None = None
     # D3: Optional Stage 1 screening context for improved evidence calibration
     prior_screening: dict | None = None
 
@@ -30,13 +34,17 @@ class ScamSubmissionRequest(BaseModel):
 class VerifyResponse(BaseModel):
     id: int
     query: str
+    canonical_verdict: str | None = None
     verdict: str  # Legacy single verdict
     claim_verdict: str | None = None
     message_authenticity_verdict: str | None = None
     confidence_score: float
+    sub_scores: dict[str, float] | None = None
     risk_level: str | None = None
     summary: str
-    sources: list[dict[str, Any]]
+    sources: list[dict[str, Any]] = []
+    official_sources: list[dict[str, Any]] = []
+    actionable_advice: str | None = None
     extracted_sender: str | None = None
     extracted_numbers: list[str] | None = None
     extracted_urls: list[str] | None = None
@@ -56,10 +64,16 @@ async def verify_claim_endpoint(req: VerifyRequest, db: Session = Depends(get_db
     to improve confidence calibration and evidence ranking.
     """
     q = (req.query or "").strip()
-    if not q and not req.image_data:
-        raise HTTPException(status_code=400, detail="Must provide either text query or attached file")
+    if not q and not req.image_data and not req.audio_data:
+        raise HTTPException(status_code=400, detail="Must provide either text query, attached image, or audio file")
     
-    result = await verify_claim(db, q, image_data=req.image_data, prior_screening=req.prior_screening)
+    result = await verify_claim(
+        db,
+        q,
+        image_data=req.image_data,
+        audio_data=req.audio_data,
+        prior_screening=req.prior_screening,
+    )
     return result
 
 @router.post("/submit-scam")
@@ -129,7 +143,33 @@ def get_recent_verifications(limit: int = 10, db: Session = Depends(get_db)):
     Fetch recent public claim checks for community visibility.
     """
     logs = db.query(VerificationLog).order_by(VerificationLog.created_at.desc()).limit(limit).all()
-    return logs
+    results = []
+    for log in logs:
+        results.append({
+            "id": log.id,
+            "query": log.query_text,
+            "canonical_verdict": log.canonical_verdict,
+            "claim_verdict": log.claim_verdict,
+            "message_authenticity_verdict": log.message_authenticity_verdict,
+            "verdict": log.verdict,
+            "confidence_score": log.confidence_score,
+            "risk_level": log.risk_level,
+            "sub_scores": log.sub_scores,
+            "official_sources": log.official_sources,
+            "actionable_advice": log.actionable_advice,
+            "extracted_sender": log.extracted_sender,
+            "extracted_numbers": log.extracted_numbers,
+            "extracted_urls": log.extracted_urls,
+            "extracted_institutions": log.extracted_institutions,
+            "summary": log.summary,
+            "sources": log.evidence_sources,
+            "sender_verified": log.sender_verified,
+            "channel_verified": log.channel_verified,
+            "recommended_actions": log.recommended_actions,
+            "methodology": log.methodology,
+            "created_at": str(log.created_at),
+        })
+    return results
 
 @router.get("/clusters")
 def get_emerging_clusters(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
@@ -154,7 +194,7 @@ def get_emerging_clusters(skip: int = 0, limit: int = 20, db: Session = Depends(
         })
     return results
 
-@router.post("/seed-alerts")
+@router.post("/seed-alerts", dependencies=[Depends(require_ingestion_admin)])
 def seed_institutional_alerts(db: Session = Depends(get_db)):
     """
     Seed initial bank and telecom institutional disclaimers and official channels for testing.
@@ -274,6 +314,121 @@ def seed_institutional_alerts(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "alerts_created": count}
 
+
+class ReportAskMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+
+class ReportAskRequest(BaseModel):
+    question: str
+    history: list[ReportAskMessage] | None = None
+
+
+class ReportAskResponse(BaseModel):
+    answer: str
+    suggested_followups: list[str]
+
+
+@router.post("/{log_id}/ask", response_model=ReportAskResponse)
+def ask_report_question_endpoint(log_id: int, req: ReportAskRequest, db: Session = Depends(get_db)):
+    """
+    Interactive Q&A on a specific Verification Report.
+    Answers follow-up questions in the context of the report and VeriFeed project guidelines.
+    """
+    q = (req.question or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+
+    log = db.query(VerificationLog).filter(VerificationLog.id == log_id).first()
+
+    # Context building
+    query_text = log.query_text if log else "Unspecified message/claim"
+    verdict = getattr(log, "verdict", "Unconfirmed") if log else "Unconfirmed"
+    risk_level = getattr(log, "risk_level", "Medium") if log else "Medium"
+    confidence = getattr(log, "confidence_score", 0.8) if log else 0.8
+    summary = getattr(log, "summary", "Verification report details") if log else "Verification report details"
+    actions = getattr(log, "recommended_actions", []) if log else []
+    sender = getattr(log, "extracted_sender", None) if log else None
+    institutions = getattr(log, "extracted_institutions", None) if log else None
+    numbers = getattr(log, "extracted_numbers", None) if log else None
+    urls = getattr(log, "extracted_urls", None) if log else None
+
+    # Format history
+    history_str = ""
+    if req.history:
+        formatted = []
+        for msg in req.history:
+            role_label = "User" if msg.role == "user" else "VeriFeed AI"
+            formatted.append(f"{role_label}: {msg.content}")
+        history_str = "\n".join(formatted)
+
+    ai = get_ai_service()
+    prompt = f"""You are the VeriFeed AI Assistant — an interactive fraud prevention and verification expert for Malawi and global context.
+The user is reviewing a specific Verification Report (Report ID #{log_id}) and asking a follow-up question.
+
+REPORT CONTEXT:
+- Message / Claim Analyzed: "{query_text}"
+- Overall Verdict: {verdict}
+- Risk Level: {risk_level}
+- Confidence Score: {confidence}
+- Verification Summary: {summary}
+- Extracted Sender: {sender or 'None'}
+- Detected Institutions: {institutions or 'None'}
+- Phone Numbers: {numbers or 'None'}
+- URLs: {urls or 'None'}
+- Recommended Actions: {actions}
+
+{f"PREVIOUS DIALOGUE:\n{history_str}\n" if history_str else ""}
+
+USER'S FOLLOW-UP QUESTION:
+"{q}"
+
+DIRECTIVES:
+1. Provide a direct, empathetic, and interactive answer grounded in the report details and general VeriFeed verification guidelines.
+2. If the user asks for action steps (e.g. what to do, who to contact), list clear, practical steps (e.g., verifying with official customer support lines, not clicking unknown links, reporting scam numbers).
+3. Keep the tone professional, reassuring, and clear.
+4. Do not invent fake facts or external evidence not related to the institution or report context.
+
+Response:"""
+
+    answer = ai.generate(prompt)
+
+    if not answer:
+        # Fallback response grounded in report context if AI service is offline or degraded
+        if risk_level == "High":
+            answer = (
+                f"Based on Report #{log_id}, this message is categorized as High Risk ({verdict}). "
+                f"We strongly advise you NOT to send money, share passwords, or dial codes requested in the message. "
+                f"To verify independently, contact the institution through official channels or visit a physical branch."
+            )
+        else:
+            answer = (
+                f"Regarding your question about Report #{log_id}: VeriFeed recommends exercising caution. "
+                f"The analyzed content has a risk rating of {risk_level}. Always double-check sender numbers and "
+                f"official domain handles before sharing personal or financial information."
+            )
+
+    # Dynamic contextual follow-up suggestions based on report risk and context
+    if risk_level == "High":
+        suggested = [
+            "What specific red flags were found in this message?",
+            "How can I report this suspicious sender to authorities?",
+            "What should I do if I already clicked the link or provided details?",
+        ]
+    else:
+        suggested = [
+            "What official news sources report on this claim?",
+            "How can I confirm this announcement with official channels?",
+            "What are the latest verified updates regarding this topic?",
+        ]
+
+    return {
+        "answer": answer,
+        "suggested_followups": suggested
+    }
+
+
 @router.get("/{log_id}", response_model=VerifyResponse)
 def get_verification_by_id(log_id: int, db: Session = Depends(get_db)):
     """
@@ -288,6 +443,16 @@ def get_verification_by_id(log_id: int, db: Session = Depends(get_db)):
     if log.evidence_sources:
         sources = json.loads(str(log.evidence_sources)) if isinstance(log.evidence_sources, str) else list(log.evidence_sources)  # type: ignore
 
+    official_sources: list[dict[str, Any]] = []
+    if getattr(log, "official_sources", None):
+        raw_off = log.official_sources
+        official_sources = json.loads(str(raw_off)) if isinstance(raw_off, str) else list(raw_off)  # type: ignore
+
+    sub_scores: dict[str, float] | None = None
+    if getattr(log, "sub_scores", None):
+        raw_sub = log.sub_scores
+        sub_scores = json.loads(str(raw_sub)) if isinstance(raw_sub, str) else dict(raw_sub)  # type: ignore
+
     extracted_numbers: list[str] | None = json.loads(str(log.extracted_numbers)) if isinstance(log.extracted_numbers, str) else (list(log.extracted_numbers) if log.extracted_numbers else None)  # type: ignore
     extracted_urls: list[str] | None = json.loads(str(log.extracted_urls)) if isinstance(log.extracted_urls, str) else (list(log.extracted_urls) if log.extracted_urls else None)  # type: ignore
     extracted_institutions: list[str] | None = json.loads(str(log.extracted_institutions)) if isinstance(log.extracted_institutions, str) else (list(log.extracted_institutions) if log.extracted_institutions else None)  # type: ignore
@@ -297,16 +462,24 @@ def get_verification_by_id(log_id: int, db: Session = Depends(get_db)):
     raw_confidence = getattr(log, "confidence_score", 0.0)
     confidence_val = float(raw_confidence) if raw_confidence is not None else 0.0
 
+    canonical = getattr(log, "canonical_verdict", None) or (
+        CanonicalVerdict.from_legacy(str(log.verdict)) if log.verdict else "UNVERIFIED"
+    )
+
     return {
         "id": log.id,  # type: ignore[arg-type]
         "query": str(log.query_text or ""),
+        "canonical_verdict": canonical,
         "verdict": str(log.verdict or ""),
         "claim_verdict": getattr(log, "claim_verdict", None),
         "message_authenticity_verdict": getattr(log, "message_authenticity_verdict", None),
         "confidence_score": confidence_val,
+        "sub_scores": sub_scores,
         "risk_level": getattr(log, "risk_level", None),
         "summary": getattr(log, "summary", ""),
         "sources": sources,
+        "official_sources": official_sources,
+        "actionable_advice": getattr(log, "actionable_advice", None),
         "extracted_sender": getattr(log, "extracted_sender", None),
         "extracted_numbers": extracted_numbers,
         "extracted_urls": extracted_urls,
@@ -317,5 +490,6 @@ def get_verification_by_id(log_id: int, db: Session = Depends(get_db)):
             "matched_institution": matched_inst,
         },
         "recommended_actions": recommended_actions,
+        "methodology": getattr(log, "methodology", None),
         "created_at": str(getattr(log, "created_at", "")),
     }

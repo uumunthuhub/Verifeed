@@ -17,9 +17,9 @@ export function EvidenceCard({ source }: { source: EvidenceSource }) {
       case "Fact Checker Rating":
         return "bg-primary-50 text-primary-600 border-primary-200";
       case "News Article":
-        return "bg-soft text-ink-600 border-border";
+        return "bg-white text-ink-600 border-border";
       default:
-        return "bg-soft text-ink-600 border-border";
+        return "bg-white text-ink-600 border-border";
     }
   };
 
@@ -37,7 +37,7 @@ export function EvidenceCard({ source }: { source: EvidenceSource }) {
   };
 
   return (
-    <div className="group relative rounded-xl bg-surface border border-border p-4 transition-all duration-200 hover:border-border hover:bg-soft shadow-md">
+    <div className="group relative rounded-xl bg-white border border-border p-4 transition-all duration-200 hover:border-primary-300 hover:shadow-lg shadow-xs">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 flex-wrap">
           <span
@@ -48,7 +48,7 @@ export function EvidenceCard({ source }: { source: EvidenceSource }) {
             {getIcon(source.type)}
             {source.type || "Evidence Source"}
           </span>
-          <span className="text-xs font-medium text-ink-600 bg-soft px-2 py-0.5 rounded-md border border-border">
+          <span className="text-xs font-medium text-ink-600 bg-white px-2 py-0.5 rounded-md border border-border">
             {source.outlet}
           </span>
         </div>
@@ -57,7 +57,7 @@ export function EvidenceCard({ source }: { source: EvidenceSource }) {
             href={source.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-ink-400 hover:text-primary-600 transition-colors p-1 rounded-lg hover:bg-soft"
+            className="text-ink-400 hover:text-primary-600 transition-colors p-1 rounded-lg hover:bg-primary-50"
             title="Open primary source"
             aria-label={`Open primary source for ${source.title}`}
           >
@@ -71,7 +71,7 @@ export function EvidenceCard({ source }: { source: EvidenceSource }) {
       </h4>
 
       {source.snippet && (
-        <p className="text-xs text-ink-600 line-clamp-3 leading-relaxed mt-2 bg-soft p-2.5 rounded-lg border border-border">
+        <p className="text-xs text-ink-600 line-clamp-3 leading-relaxed mt-2 bg-white p-2.5 rounded-lg border border-border">
           &ldquo;{source.snippet}&rdquo;
         </p>
       )}

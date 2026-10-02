@@ -41,7 +41,7 @@ class FraudSignal(Base):
     # Optional link to a specific submission that triggered this signal
     submission_id = Column(Integer, ForeignKey("user_submissions.id"), nullable=True, index=True)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), index=True)
 
 
 class KnownScamPattern(Base):
@@ -69,8 +69,12 @@ class KnownScamPattern(Base):
     hit_count = Column(Integer, nullable=False, default=0)
     # How many times this pattern has been matched (for tuning)
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.datetime.now(datetime.UTC),
+        onupdate=lambda: datetime.datetime.now(datetime.UTC),
+    )
 
 
 class SuspiciousSender(Base):
@@ -95,8 +99,8 @@ class SuspiciousSender(Base):
     # Statuses: reported, under_review, confirmed_suspicious, cleared
 
     notes = Column(Text, nullable=True)
-    first_reported = Column(DateTime, default=datetime.datetime.utcnow, index=True)
-    last_reported = Column(DateTime, default=datetime.datetime.utcnow)
+    first_reported = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), index=True)
+    last_reported = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
 
 
 class SuspiciousUrl(Base):
@@ -120,8 +124,8 @@ class SuspiciousUrl(Base):
     # Types: phishing, impersonation, malware, advance_fee_scam
 
     notes = Column(Text, nullable=True)
-    first_reported = Column(DateTime, default=datetime.datetime.utcnow, index=True)
-    last_reported = Column(DateTime, default=datetime.datetime.utcnow)
+    first_reported = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), index=True)
+    last_reported = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
 
 
 class VerificationCase(Base):
@@ -153,9 +157,9 @@ class VerificationCase(Base):
     # Statuses: screening, pending_verification, verified, closed
 
     notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), index=True)
     updated_at = Column(
         DateTime,
-        default=datetime.datetime.utcnow,
-        onupdate=datetime.datetime.utcnow,
+        default=lambda: datetime.datetime.now(datetime.UTC),
+        onupdate=lambda: datetime.datetime.now(datetime.UTC),
     )

@@ -32,15 +32,17 @@ class StorySeed(TypedDict):
 
 
 INITIAL_SOURCES: list[SourceSeed] = [
-    {"name": "Zodiak TV", "website_url": "https://zodiakmalawi.com", "rss_url": "https://zodiakmalawi.com/feed/tv"},
-    {"name": "Zodiak Online", "website_url": "https://zodiakmalawi.com", "rss_url": "https://zodiakmalawi.com/feed"},
-    {"name": "Times 360 Malawi", "website_url": "https://times.mw", "rss_url": "https://times.mw/feed"},
+    {"name": "Zodiak TV", "website_url": "https://www.zodiakmalawi.com/", "rss_url": "https://www.zodiakmalawi.com/feed/tv"},
+    {"name": "Zodiak Online", "website_url": "https://www.zodiakmalawi.com/", "rss_url": "https://www.zodiakmalawi.com/feed"},
+    {"name": "Times TV", "website_url": "https://times.mw/etimes/", "rss_url": "https://times.mw/etimes/feed"},
+    {"name": "Luntha TV", "website_url": "https://lunthatv.com/", "rss_url": "https://lunthatv.com/feed"},
     {"name": "BBC News", "website_url": "https://bbc.com/news", "rss_url": "https://feeds.bbci.co.uk/news/rss.xml"},
     {"name": "Reuters", "website_url": "https://reuters.com", "rss_url": "https://feeds.reuters.com/reuters/topNews"},
     {"name": "AP News", "website_url": "https://apnews.com", "rss_url": "https://rsshub.app/apnews/topics/apf-topnews"},
     {"name": "The Guardian", "website_url": "https://theguardian.com", "rss_url": "https://www.theguardian.com/world/rss"},
     {"name": "Al Jazeera", "website_url": "https://aljazeera.com", "rss_url": "https://www.aljazeera.com/xml/rss/all.xml"},
     {"name": "TechCrunch", "website_url": "https://techcrunch.com", "rss_url": "https://techcrunch.com/feed/"},
+
 ]
 
 SEED_STORIES: list[StorySeed] = [

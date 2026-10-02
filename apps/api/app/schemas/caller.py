@@ -1,10 +1,10 @@
-from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class CallerScreenRequest(BaseModel):
     phone_number: str = Field(..., description="Incoming phone number or shortcode, e.g. +1234567890 or 987")
-    country_code: Optional[str] = Field(None, description="Optional ISO country code, e.g. US, ZA, MW")
+    country_code: str | None = Field(None, description="Optional ISO country code, e.g. US, ZA, MW")
 
 
 class CallerScreenResponse(BaseModel):
@@ -14,4 +14,4 @@ class CallerScreenResponse(BaseModel):
     carrier_category: str = Field("UNKNOWN", description="ROBOCALL, FINANCIAL_IMPERSONATOR, TELEMARKETER, or LEGITIMATE")
     flag_count: int = Field(0, description="Total community scam reports linked to this caller ID")
     recommended_action: str = Field("ALLOW", description="ALLOW, SILENCE, or DISALLOW")
-    signals: List[str] = Field(default_factory=list, description="Specific threat signals detected for this caller ID")
+    signals: list[str] = Field(default_factory=list, description="Specific threat signals detected for this caller ID")

@@ -131,6 +131,7 @@ def get_story(story_id: int, db: Session = Depends(get_db)):
     story_dict['articles'] = articles
     source_names = [a.source.name for a in articles if a.source]
     story_dict['sources'] = source_names
+   
     story_dict['primary_source'] = source_names[0] if source_names else None
 
     return story_dict

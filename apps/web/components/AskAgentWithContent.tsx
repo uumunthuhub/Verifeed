@@ -16,8 +16,8 @@ import { verifyClaim } from "@/lib/api";
 import { VerificationResult } from "@/lib/types";
 
 const SAMPLE_CLAIMS = [
+  "Lion escaped Kasungu game reserve attacking people and livestock",
   "Standard Bank offering instant WhatsApp collateral free loans",
-  "WHO declares new global pandemic emergency",
   "Reserve Bank warns against unlicensed crypto trading schemes",
   "Airtel Money calling users asking for secret PIN",
 ];
@@ -27,6 +27,7 @@ interface AttachedFile {
   size: string;
   dataUrl: string;
   isImage: boolean;
+  isAudio: boolean;
 }
 
 interface AskAgentWithContentProps {
@@ -52,6 +53,7 @@ export function AskAgentWithContent({ initialContent }: AskAgentWithContentProps
         : `${Math.round(file.size / 1024)} KB`;
 
     const isImage = file.type.startsWith("image/");
+    const isAudio = file.type.startsWith("audio/") || /\.(mp3|wav|m4a|ogg|aac|flac|opus)$/i.test(file.name);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -60,6 +62,7 @@ export function AskAgentWithContent({ initialContent }: AskAgentWithContentProps
         size: sizeFormatted,
         dataUrl: reader.result as string,
         isImage,
+        isAudio,
       });
     };
     reader.readAsDataURL(file);
@@ -79,8 +82,11 @@ export function AskAgentWithContent({ initialContent }: AskAgentWithContentProps
 
     const res = await verifyClaim(
       text.trim(),
-      attachedFile?.dataUrl || null,
+      attachedFile?.isImage ? attachedFile.dataUrl : null,
       attachedFile?.name || null,
+      null,
+      attachedFile?.isAudio ? attachedFile.dataUrl : null,
+      attachedFile?.isAudio ? attachedFile.name : null,
     );
     setLoading(false);
 
@@ -88,15 +94,16 @@ export function AskAgentWithContent({ initialContent }: AskAgentWithContentProps
   };
 
   return (
-    <div className="relative w-full overflow-hidden rounded-3xl border border-primary-200 bg-linear-to-br from-white via-gray-50 to-white p-6 md:p-8 shadow-2xl shadow-gray-200 backdrop-blur-xl">
+    <div className="relative w-full overflow-hidden rounded-3xl border border-border bg-white p-6 md:p-8 shadow-2xl shadow-primary-500/5 backdrop-blur-xl">
       {/* Hidden File Input */}
       <input
         type="file"
         ref={fileInputRef}
-        accept="image/*,.txt,.csv,.json"
+        accept="image/*,audio/*,.txt,.csv,.json,.mp3,.wav,.m4a,.ogg,.aac"
         onChange={handleFileSelect}
         className="hidden"
       />
+
 
       {/* Decorative Glow */}
       <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary-500/10 blur-3xl" />
@@ -105,16 +112,18 @@ export function AskAgentWithContent({ initialContent }: AskAgentWithContentProps
       <div className="relative flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white border border-primary-200 p-0.5 shadow-md shadow-primary-500/10 overflow-hidden shrink-0">
-            <img src="/verifeed-bot.png" alt="VeriFeed AI Bot" className="h-full w-full object-contain" />
-          </span>
+          <img
+            src="/verifeed_ai_bot.png"
+            alt="VeriFeed AI Bot"
+            className="h-12 w-12 object-cover shrink-0"
+          />
           <div>
             <h2 className="text-lg md:text-xl font-bold text-foreground tracking-tight">
               Ask VeriFeed AI Verification Agent
             </h2>
-            <p className="text-xs md:text-sm text-gray-600">
-              Paste a claim, headline, or upload an SMS screenshot / document to verify using
-              multimodal RAG.
+            <p className="text-xs md:text-sm text-ink-500">
+              Paste a claim, headline, or upload an image / audio voice note /
+              screenshot to analyze facts in real-time.
             </p>
           </div>
         </div>
@@ -225,14 +234,6 @@ export function AskAgentWithContent({ initialContent }: AskAgentWithContentProps
               </button>
             ))}
           </div>
-
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="text-xs text-primary-500 hover:underline font-medium flex items-center gap-1"
-          >
-            <span>📁 Upload local file/image</span>
-          </button>
         </div>
       </div>
     </div>

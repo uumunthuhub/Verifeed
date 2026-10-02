@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { fetchVerificationById } from "@/lib/api";
 import { VerdictFirstResult } from "@/components/VerdictFirstResult";
+import { ReportAskAgent } from "@/components/ReportAskAgent";
 import { Navbar } from "@/components/Navbar";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
@@ -57,16 +58,16 @@ export default async function VerificationResultPage({ params }: PageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground pb-16">
       <Navbar maxWidth="max-w-6xl" />
       <main className="max-w-6xl mx-auto px-4 pt-8">
         <div className="mb-6">
           <Link
-            href="/verify"
+            href="/"
             className="inline-flex items-center gap-2 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors bg-primary-50 px-3 py-1.5 rounded-full border border-primary-200"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Verification Lab
+            Back to Home
           </Link>
         </div>
 
@@ -116,9 +117,30 @@ export default async function VerificationResultPage({ params }: PageProps) {
             urls: result.extracted_urls,
             institution_names: result.extracted_institutions,
           }}
+          verificationDetails={result.verification_details}
           methodology={result.methodology}
+        />
+
+
+        {/* AI Widget — Interactive Q&A at the bottom of the verification report content */}
+        <ReportAskAgent
+          reportId={result.id}
+          query={result.query}
+          verdict={result.verdict}
+          claimVerdict={claimVerdict}
+          messageAuthenticityVerdict={messageAuthenticityVerdict}
+          riskLevel={riskLevel as "High" | "Medium" | "Low"}
+          summary={result.summary}
+          recommendedActions={recommendedActions}
+          extractedEntities={{
+            sender: result.extracted_sender,
+            phone_numbers: result.extracted_numbers,
+            urls: result.extracted_urls,
+            institution_names: result.extracted_institutions,
+          }}
         />
       </main>
     </div>
   );
 }
+

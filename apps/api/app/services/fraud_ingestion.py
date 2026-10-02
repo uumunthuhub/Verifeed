@@ -3,7 +3,7 @@ import logging
 import os
 
 import feedparser
-import google.generativeai as genai
+import google.genai as genai
 
 from app.db.session import SessionLocal
 from app.models.institution import Institution, InstitutionalAlert
@@ -13,8 +13,6 @@ from app.worker import celery_app
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 GENERATION_MODEL = "gemini-1.5-flash"
 
@@ -22,9 +20,9 @@ def classify_fraud_alert(title: str, content: str) -> bool:
     """Use Gemini to determine if a press release/article is a fraud disclaimer."""
     if not GEMINI_API_KEY:
         return False
-        
+
     try:
-        model = genai.GenerativeModel(GENERATION_MODEL)
+        client = genai.Client(api_key=GEMINI_API_KEY)
         prompt = (
             "Analyze the following institutional announcement. Does this announcement "
             "warn the public about a scam, fraud, fake offer, or impersonation attempt? "
@@ -32,8 +30,11 @@ def classify_fraud_alert(title: str, content: str) -> bool:
             f"Title: {title}\n"
             f"Content: {content}"
         )
-        response = model.generate_content(prompt)
-        text = response.text.strip().upper()
+        response = client.models.generate_content(
+            model=GENERATION_MODEL,
+            contents=prompt,
+        )
+        text = (response.text or "").strip().upper()
         return "YES" in text
     except Exception as e:
         logger.error(f"Error classifying fraud alert: {e}")
@@ -113,11 +114,7 @@ def poll_all_institutions():
         institutions = db.query(Institution).all()
         queued = 0
         for inst in institutions:
-            # We assume the website URL has an RSS feed or we use a fallback mock URL.
-            # In a real system, Institution would have a specific `rss_url` column.
-            feed_url = f"{inst.website_url}/rss" 
-            ingest_institutional_alerts.delay(inst.id, feed_url)
-            queued += 1
+            logger.info("Institution %s has no configured ingestion adapter; skipping.", inst.name)
         return f"Queued fraud ingestion for {queued} institutions."
     finally:
         db.close()

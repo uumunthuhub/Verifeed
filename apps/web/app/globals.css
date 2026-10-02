@@ -75,7 +75,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
-  scroll-behavior: smooth;
+  /* Removed scroll-behavior: smooth; to fix Next.js routing scroll issues */
 }
 
 body {

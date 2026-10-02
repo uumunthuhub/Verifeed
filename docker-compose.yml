@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   db:
@@ -43,8 +42,9 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://verifeed_user:verifeed_password@db:5432/verifeed_db
+      DATABASE_URL: postgresql+psycopg://verifeed_user:verifeed_password@db:5432/verifeed_db
       REDIS_URL: redis://redis:6379/0
+      RSS_BRIDGE_URL: http://rss-bridge:80
     depends_on:
       db:
         condition: service_healthy
@@ -57,16 +57,19 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     container_name: verifeed_worker
-    command: uv run celery -A app.worker.celery_app worker --loglevel=info
+    command: uv run celery -A app.worker.celery_app worker --loglevel=info --concurrency=2
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://verifeed_user:verifeed_password@db:5432/verifeed_db
+      DATABASE_URL: postgresql+psycopg://verifeed_user:verifeed_password@db:5432/verifeed_db
       REDIS_URL: redis://redis:6379/0
+      RSS_BRIDGE_URL: http://rss-bridge:80
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rss-bridge:
         condition: service_healthy
     restart: unless-stopped
 
@@ -79,13 +82,32 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://verifeed_user:verifeed_password@db:5432/verifeed_db
+      DATABASE_URL: postgresql+psycopg://verifeed_user:verifeed_password@db:5432/verifeed_db
       REDIS_URL: redis://redis:6379/0
+      RSS_BRIDGE_URL: http://rss-bridge:80
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rss-bridge:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Phase 1: RSS Bridge — converts public Facebook pages to Atom feeds ──────
+  rss-bridge:
+    image: rssbridge/rss-bridge:latest
+    container_name: verifeed_rss_bridge
+    ports:
+      - "3001:80"  # Access via http://localhost:3001 for local debugging
+    volumes:
+      - ./rss-bridge-config:/config  # Optional: custom whitelist config
+    healthcheck:
+      test: ["CMD", "php", "-r", "file_get_contents('http://localhost:80/');"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
 volumes:

@@ -90,7 +90,7 @@ def screen_caller_endpoint(req: CallerScreenRequest) -> CallerScreenResponse:
         category = cat
         flags = count
         signals.append(f"Flagged Scam Number: {desc}")
-    elif clean_number.startswith("+1800") or clean_number.startswith("+1888"):
+    elif clean_number.startswith(("+1800", "+1888")):
         risk_level = "Medium"
         action = "SILENCE"
         category = "TELEMARKETER"

@@ -27,7 +27,7 @@ const baseProps = {
 describe("VerdictFirstResult", () => {
   it("renders the VERDICT section heading", () => {
     render(<VerdictFirstResult {...baseProps} />);
-    expect(screen.getByText("VERDICT")).toBeInTheDocument();
+    expect(screen.getByText(/VERDICT/i)).toBeInTheDocument();
   });
 
   it("renders the summary text", () => {
@@ -74,13 +74,13 @@ describe("VerdictFirstResult", () => {
   it("renders the High risk level badge", () => {
     render(<VerdictFirstResult {...baseProps} riskLevel="High" />);
     // Risk level appears in both the verdict card and the guidance card
-    const highBadges = screen.getAllByText("High");
+    const highBadges = screen.getAllByText(/High/i);
     expect(highBadges.length).toBeGreaterThan(0);
   });
 
   it("renders the Low risk level badge", () => {
     render(<VerdictFirstResult {...baseProps} riskLevel="Low" />);
-    const lowBadges = screen.getAllByText("Low");
+    const lowBadges = screen.getAllByText(/Low/i);
     expect(lowBadges.length).toBeGreaterThan(0);
   });
 

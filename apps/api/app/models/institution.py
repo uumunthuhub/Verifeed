@@ -28,8 +28,12 @@ class Institution(Base):
     
     # Metadata
     verified_social = Column(String(500), nullable=True)  # Deprecated: use verified_social_accounts
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.datetime.now(datetime.UTC),
+        onupdate=lambda: datetime.datetime.now(datetime.UTC),
+    )
 
     alerts = relationship("InstitutionalAlert", back_populates="institution", cascade="all, delete-orphan")
 
@@ -41,7 +45,7 @@ class InstitutionalAlert(Base):
     title = Column(String(500), nullable=False)
     alert_text = Column(Text, nullable=False)
     source_url = Column(String(500), nullable=False)
-    published_date = Column(DateTime, default=datetime.datetime.utcnow)
+    published_date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC))
     embedding = Column(Vector(768), nullable=True)  # Gemini 768-dim vector
 
     institution = relationship("Institution", back_populates="alerts")

@@ -13,6 +13,14 @@ FastAPI backend service powering the VeriFeed evidence-first investigation engin
 - **AI Synthesis:** Google Gemini AI SDK (`google-genai`)
 - **Package Manager:** `uv`
 
+## Evidence Source Governance
+
+The database source registry is the only place an automated ingestion job may read from. A source begins inactive and must be approved by an administrator before ingestion. Each active source records its approved content domains, trust tier, polling interval, ingestion status, and the provenance of every indexed article.
+
+Use `PUT /api/v1/sources/{source_id}/registry` with the `X-Admin-Token` header to approve a validated feed. The token is supplied by `ADMIN_INGESTION_TOKEN`; if it is absent, registry-changing endpoints fail closed. A source URL must be HTTPS and every indexed article must belong to one of that source's approved domains.
+
+Use `POST /api/v1/sources/scrape` only for a validated URL from an active source. This supports official publication pages that do not expose an RSS feed. Community submissions are kept separate from the approved evidence index and cannot independently produce a factual verdict.
+
 ---
 
 ## 📡 API Endpoints

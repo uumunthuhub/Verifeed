@@ -6,14 +6,14 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Emerald Gradient Rounded Square Box -->
-    <path android:pathData="M39,27h30a12,12 0 0 1 12,12v30a12,12 0 0 1 -12,12h-30a12,12 0 0 1 -12,-12v-30a12,12 0 0 1 12,-12z">
+    <!-- Emerald Gradient Rounded Square Box — fills the adaptive icon safe zone (18-90dp) -->
+    <path android:pathData="M34,20h40a14,14 0 0 1 14,14v40a14,14 0 0 1 -14,14h-40a14,14 0 0 1 -14,-14v-40a14,14 0 0 1 14,-14z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:startX="27"
-                android:startY="27"
-                android:endX="81"
-                android:endY="81"
+                android:startX="20"
+                android:startY="20"
+                android:endX="88"
+                android:endY="88"
                 android:type="linear">
                 <item android:color="#FF10B981" android:offset="0.0" />
                 <item android:color="#FF059669" android:offset="1.0" />
@@ -21,14 +21,14 @@
         </aapt:attr>
     </path>
 
-    <!-- Bold White 'V' -->
+    <!-- Bold White 'V' — scaled up and centered -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M34,43 L41,65 L45,65 L52,43 L47,43 L43,58 L39,43 Z" />
+        android:pathData="M28,38 L40,74 L46,74 L58,38 L51,38 L43,62 L35,38 Z" />
 
-    <!-- Bold White 'F' -->
+    <!-- Bold White 'F' — scaled up and centered -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M56,43 L72,43 L72,47.5 L61,47.5 L61,52.5 L70,52.5 L70,57 L61,57 L61,65 L56,65 Z" />
+        android:pathData="M63,38 L85,38 L85,45 L70,45 L70,53 L82,53 L82,60 L70,60 L70,74 L63,74 Z" />
 
 </vector>

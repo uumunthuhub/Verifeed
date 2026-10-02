@@ -190,14 +190,26 @@ fun VerifyScreen(
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 
-                Text(
-                    "Ask VeriFeed Agent",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = TextPrimary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.verifeed_ai_bot),
+                        contentDescription = "VeriFeed AI Bot",
+                        modifier = Modifier
+                            .size(40.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "Ask VeriFeed Agent",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = TextPrimary
+                    )
+                }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(4.dp))
 
                 // --- Integrated Chat Widget Input Card ---
                 Box(

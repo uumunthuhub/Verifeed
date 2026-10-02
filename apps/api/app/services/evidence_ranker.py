@@ -1,24 +1,27 @@
 """
-VeriFeed Evidence Ranker — Phase D
+VeriFeed Evidence Ranker — Phase 1+2
 
 Ranks and scores evidence sources by credibility before they are
 passed to the Gemini synthesis prompt. This ensures the AI receives
 the most authoritative evidence first and produces better-calibrated
 confidence scores.
 
-Evidence tier hierarchy (per VeriFeed_Project_Blueprint_Final.md §78.4):
+Evidence tier hierarchy (per system_documentation.md Truth Hierarchy):
 
-  Tier 1 — Official Institutional Alerts   (score: 100)
-  Tier 2 — Fact Checker Ratings            (score:  75)
-  Tier 3 — Reputable News Articles         (score:  50)
-  Tier 4 — Community Submission Signals    (score:  20)
-  Tier 5 — Unknown / Uncategorised        (score:   5)
+  Tier 1 — Government / Regulatory / Telecom (S_domain = 1.0)
+  Tier 2 — Licensed Media / Fact-checkers    (S_domain = 0.8)
+  Tier 3 — Supporting evidence               (S_domain = 0.5)
+  Tier 4 — Community signals                 (S_domain = 0.2)
 
-Confidence calibration formula:
-  base = weighted average of top-3 evidence tier scores (0–1)
-  recency_bonus = +0.10 if any source is < 30 days old
-  alignment_bonus = +0.05 per additional corroborating source (cap: +0.15)
-  final = min(base + recency_bonus + alignment_bonus, 0.99)
+Weighted Confidence Formula (Phase 2 — G5/G6 fix):
+  S_total = (0.30 * S_domain) + (0.40 * S_vector)
+          + (0.20 * S_signature) + (0.10 * S_telecom)
+
+  Where:
+    S_domain    = source trust tier score (0.0–1.0)
+    S_vector    = cosine similarity of top vector match (0.0–1.0)
+    S_signature = pHash Hamming match score: 1 - (dist/64) (0.0–1.0)
+    S_telecom   = telecom sender ID registry score (0 or 1)
 
 Methodology string:
   Human-readable explanation of how the verdict was reached — surfaced
@@ -69,14 +72,136 @@ class RankedSource:
     recency_score: float
     final_score: float
     methodology_note: str
+    # Trust tier (1–4) used by WeightedConfidenceCalculator
+    trust_tier: int = 4
 
+
+@dataclass
+class WeightedSubScores:
+    """
+    4-component weighted confidence sub-scores (Phase 2 — G6 fix).
+
+    S_total = (0.30 * domain) + (0.40 * vector)
+            + (0.20 * signature) + (0.10 * telecom)
+    """
+    domain: float = 0.0
+    vector: float = 0.0
+    signature: float = 0.0
+    telecom: float = 0.0
+
+    def total(self) -> float:
+        """Compute the weighted total confidence score."""
+        return round(
+            (0.35 * self.domain)
+            + (0.35 * self.vector)
+            + (0.20 * self.signature)
+            + (0.10 * self.telecom),
+            4,
+        )
+
+    def as_dict(self) -> dict[str, float]:
+        """Serialize to dict for JSON storage in DB / API response."""
+        return {
+            "domain": self.domain,
+            "vector": self.vector,
+            "signature": self.signature,
+            "telecom": self.telecom,
+        }
 
 @dataclass
 class RankingResult:
     ranked_sources: list[RankedSource] = field(default_factory=list)
     confidence_score: float = 0.5
+    sub_scores: WeightedSubScores = field(default_factory=WeightedSubScores)
     methodology: str = ""
     evidence_tier_summary: dict[str, int] = field(default_factory=dict)
+
+# ---------------------------------------------------------------------------
+# WeightedConfidenceCalculator — Phase 2 (G5 / G6 fix)
+# ---------------------------------------------------------------------------
+
+# Source type → trust tier mapping
+SOURCE_TYPE_TIER: dict[str, int] = {
+    "Official Institutional Alert": 1,
+    "Fact Checker Rating": 2,
+    "News Article": 2,
+    "Community Submission": 4,
+    "Unknown": 4,
+}
+
+# Trust tier → S_domain score
+DOMAIN_TIER_SCORES: dict[int, float] = {
+    1: 1.0,   # Government / Regulatory / Telecom
+    2: 0.85,  # Licensed Media / Fact-checkers
+    3: 0.5,   # Supporting evidence
+    4: 0.2,   # Community signals
+}
+
+
+class WeightedConfidenceCalculator:
+    """
+    Computes the 4-component weighted confidence score per system_documentation.md.
+
+    Formula:
+        S_total = 0.35·S_domain + 0.35·S_vector + 0.20·S_signature + 0.10·S_telecom
+
+    Usage:
+        sub = WeightedConfidenceCalculator.compute(
+            top_source_tier=1,
+            vector_similarity=0.82,
+            hamming_distance=None,
+            is_verified_sender=True,
+        )
+        total = sub.total()   # e.g. 0.728
+        scores_dict = sub.as_dict()
+    """
+
+    @staticmethod
+    def s_domain(trust_tier: int) -> float:
+        """Map source trust tier (1–4) to S_domain (0.0–1.0)."""
+        return DOMAIN_TIER_SCORES.get(trust_tier, DOMAIN_TIER_SCORES[4])
+
+    @staticmethod
+    def s_vector(cosine_similarity: float) -> float:
+        """Clamp vector cosine similarity to [0.0, 1.0]."""
+        return max(0.0, min(1.0, cosine_similarity))
+
+    @staticmethod
+    def s_signature(hamming_distance: int | None) -> float:
+        """
+        Compute pHash signature match score.
+        Formula: 1.0 - (hamming_distance / 64)
+        Returns 0.0 when no pHash match available.
+        """
+        if hamming_distance is None:
+            return 0.0
+        return max(0.0, round(1.0 - (hamming_distance / 64), 4))
+
+    @staticmethod
+    def s_telecom(is_verified_sender: bool | None) -> float:
+        """1.0 if sender is officially registered; 0.0 if unverified or unknown."""
+        return 1.0 if is_verified_sender else 0.0
+
+    @classmethod
+    def compute(
+        cls,
+        top_source_tier: int = 4,
+        vector_similarity: float = 0.0,
+        hamming_distance: int | None = None,
+        is_verified_sender: bool | None = None,
+    ) -> WeightedSubScores:
+        """Compute all 4 sub-scores and return a WeightedSubScores instance."""
+        return WeightedSubScores(
+            domain=cls.s_domain(top_source_tier),
+            vector=cls.s_vector(vector_similarity),
+            signature=cls.s_signature(hamming_distance),
+            telecom=cls.s_telecom(is_verified_sender),
+        )
+
+    @classmethod
+    def compute_total(cls, sub: WeightedSubScores) -> float:
+        """Compute weighted total from a WeightedSubScores instance."""
+        return sub.total()
 
 
 # ---------------------------------------------------------------------------
@@ -142,8 +267,15 @@ class EvidenceRanker:
         source_type = src.get("type", "Unknown")
         outlet = src.get("outlet", "")
         published_date = src.get("published_date") or src.get("published_at")
-
-        tier = cls._tier_score(source_type)
+        default_trust_tier = SOURCE_TYPE_TIER.get(source_type, 4)
+        source_trust_tier = int(src.get("trust_tier", default_trust_tier))
+        source_trust_tier = min(max(source_trust_tier, 1), 4)
+        tier = {
+            1: TIER_SCORES["Official Institutional Alert"],
+            2: TIER_SCORES["Fact Checker Rating"],
+            3: TIER_SCORES["News Article"],
+            4: TIER_SCORES["Community Submission"],
+        }[source_trust_tier]
         rep_bonus = cls._reputation_bonus(outlet)
         recency = cls._recency_score(str(published_date) if published_date else None)
         recency_pts = int(recency * 20)  # max +20 pts
@@ -167,6 +299,7 @@ class EvidenceRanker:
             recency_score=recency,
             final_score=final,
             methodology_note=note,
+            trust_tier=source_trust_tier,
         )
 
     @classmethod
