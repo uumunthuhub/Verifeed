@@ -53,3 +53,24 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/privacy")
+def privacy_policy_info():
+    return {
+        "title": "VeriFeed Privacy Policy",
+        "policy_url": "https://verifeed.org/privacy",
+        "meta_data_deletion_url": "https://verifeed.org/privacy#data-deletion",
+        "contact_email": "privacy@verifeed.org",
+        "effective_date": "2026-10-03",
+        "compliance": ["Meta Developer Policy", "GDPR", "On-Device Privacy First"],
+    }
+
+@app.get("/data-deletion")
+def data_deletion_instructions():
+    return {
+        "service": "VeriFeed Meta Data Deletion Instructions",
+        "instructions": "To request deletion of Facebook data, email privacy@verifeed.org with your Facebook Page ID or remove the VeriFeed App under Facebook Settings > Apps and Websites.",
+        "deletion_url": "https://verifeed.org/privacy#data-deletion",
+        "response_time": "48 hours",
+    }
+

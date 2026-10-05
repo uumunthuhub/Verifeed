@@ -1,6 +1,7 @@
 """
 Facebook Messenger Bot Service
 """
+from typing import Any
 import logging
 import os
 import httpx
@@ -12,12 +13,13 @@ logger = logging.getLogger(__name__)
 
 PAGE_ACCESS_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "")
 
-async def send_messenger_reply(recipient_id: str, text: str):
-    if not PAGE_ACCESS_TOKEN:
-        logger.warning("[Messenger] Missing PAGE_ACCESS_TOKEN, cannot send reply.")
-        return
+async def send_messenger_reply(recipient_id: str, text: str) -> dict[str, Any]:
+    test_mode = os.getenv("TEST_MODE", "false").lower() in ("true", "1", "yes")
+    if test_mode or not PAGE_ACCESS_TOKEN:
+        logger.info("[Messenger] [TEST MODE] Simulated reply to %s:\n%s", recipient_id, text)
+        return {"status": "test_mode", "recipient_id": recipient_id, "text": text}
         
-    url = f"https://graph.facebook.com/v19.0/me/messages"
+    url = "https://graph.facebook.com/v19.0/me/messages"
     params = {"access_token": PAGE_ACCESS_TOKEN}
     payload = {
         "recipient": {"id": recipient_id},
@@ -29,20 +31,22 @@ async def send_messenger_reply(recipient_id: str, text: str):
             resp = await client.post(url, params=params, json=payload)
             resp.raise_for_status()
             logger.info("[Messenger] Reply sent successfully to %s", recipient_id)
+            return resp.json()
         except Exception as e:
             logger.error("[Messenger] Failed to send reply: %s", e)
+            raise
 
-async def process_messenger_message(message: dict, sender_id: str):
+
+async def process_messenger_message(message: dict, sender_id: str) -> dict[str, Any]:
     claim_text = message.get("text", "")
 
     if not claim_text.strip():
         if "attachments" in message:
             logger.warning("[Messenger] Attachment received but not implemented yet.")
-        await send_messenger_reply(
+        return await send_messenger_reply(
             sender_id,
             "⚠️ VeriFeed could not extract readable content. Please forward the original text or a clearer image."
         )
-        return
 
     logger.info("[Messenger] Processing claim for %s: %s", sender_id, claim_text[:50])
 
@@ -64,9 +68,9 @@ async def process_messenger_message(message: dict, sender_id: str):
             f"📰 *Evidence:*\n{sources_text or 'No sources found.'}\n\n"
             f"_Reply with any follow-up question about this claim._"
         )
-        await send_messenger_reply(sender_id, reply)
+        return await send_messenger_reply(sender_id, reply)
     except Exception:
         logger.exception("[Messenger] Error processing claim")
-        await send_messenger_reply(sender_id, "⚠️ An error occurred while verifying the claim. Please try again later.")
+        return await send_messenger_reply(sender_id, "⚠️ An error occurred while verifying the claim. Please try again later.")
     finally:
         db.close()

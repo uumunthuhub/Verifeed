@@ -1,13 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
 
 export const metadata: Metadata = {
   title: "VeriFeed — AI-Powered News Fact-Checking",
@@ -27,12 +20,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`h-full ${inter.variable}`}>
+    <html lang="en" className="h-full">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${inter.className} min-h-full flex flex-col bg-background text-foreground antialiased`}>
+      <body className="font-sans min-h-full flex flex-col bg-background text-foreground antialiased">
         <div className="flex-1 flex flex-col mx-auto max-w-6xl w-full px-4">{children}</div>
         <Footer />
       </body>

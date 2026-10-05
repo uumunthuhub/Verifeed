@@ -83,17 +83,17 @@ export function Footer({ maxWidth = "max-w-6xl" }: { maxWidth?: string }) {
           </p>
 
           <div className="flex items-center gap-4">
-            <span className="hover:text-gray-700 cursor-pointer">
+            <Link href="/privacy" className="hover:text-primary-600 transition-colors font-medium">
               Privacy Policy
-            </span>
+            </Link>
             <span>•</span>
-            <span className="hover:text-gray-700 cursor-pointer">
+            <Link href="/terms" className="hover:text-primary-600 transition-colors font-medium">
               Terms of Service
-            </span>
+            </Link>
             <span>•</span>
-            <span className="hover:text-gray-700 cursor-pointer">
-              Source Transparency Policy
-            </span>
+            <Link href="/privacy#data-deletion" className="hover:text-primary-600 transition-colors font-medium">
+              Data Deletion
+            </Link>
           </div>
         </div>
       </div>
